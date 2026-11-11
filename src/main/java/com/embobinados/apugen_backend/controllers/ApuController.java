@@ -1,6 +1,7 @@
 package com.embobinados.apugen_backend.controllers;
 
 import com.embobinados.apugen_backend.dto.ApuRequestDTO;
+import com.embobinados.apugen_backend.dto.ApuResponseDTO;
 import com.embobinados.apugen_backend.entity.*;
 import com.embobinados.apugen_backend.entity.Process;
 import com.embobinados.apugen_backend.service.ApuService;
@@ -83,6 +84,14 @@ public class ApuController {
     public ResponseEntity<List<Process>> listarTodosLosApus() {
         List<Process> apus = apuService.getAllApus();
         return ResponseEntity.ok(apus);
+    }
+
+    @GetMapping("/porOrden")
+    public ResponseEntity<ApuResponseDTO> buscarApuPorOrdenServicio(
+            @RequestParam("serviceRequest") String serviceRequest
+    ) {
+        ApuResponseDTO apu = apuService.getApuByServiceRequest(serviceRequest);
+        return ResponseEntity.ok(apu);
     }
 
     @GetMapping("/buscar")

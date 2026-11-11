@@ -15,109 +15,461 @@ public class StringUtilz {
     }
 }
 
-==> src/main/java/com/embobinados/apugen_backend/repository/CompanyRepository.java <==
-package com.embobinados.apugen_backend.repository;
+==> src/main/java/com/embobinados/apugen_backend/entity/Labor.java <==
+package com.embobinados.apugen_backend.entity;
 
-import com.embobinados.apugen_backend.entity.Company;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
-@Repository
-public interface CompanyRepository extends JpaRepository<Company, String> {
+@Entity
+@Table(name = "labors")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Labor {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String description; // Ej: "Técnico Embobinador Principal"
+
+    @Column(name = "base_daily_wage", precision = 12, scale = 2, nullable = false)
+    private BigDecimal baseDailyWage;
 }
-==> src/main/java/com/embobinados/apugen_backend/repository/LaborRepository.java <==
-package com.embobinados.apugen_backend.repository;
-import com.embobinados.apugen_backend.entity.Labor;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+==> src/main/java/com/embobinados/apugen_backend/entity/ProcessEquipment.java <==
+package com.embobinados.apugen_backend.entity;
 
-@Repository
-public interface LaborRepository extends JpaRepository<Labor, String> {}
-==> src/main/java/com/embobinados/apugen_backend/repository/MaterialRepository.java <==
-package com.embobinados.apugen_backend.repository;
-import com.embobinados.apugen_backend.entity.Material;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
-@Repository
-public interface MaterialRepository extends JpaRepository<Material, String> {}
-==> src/main/java/com/embobinados/apugen_backend/repository/ProcessRepository.java <==
-package com.embobinados.apugen_backend.repository;
+@Entity
+@Table(name = "process_equipments")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessEquipment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "process_service_request", nullable = false)
+    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
+    private Process process;
+
+    // Referencia al catálogo maestro
+    @ManyToOne
+    @JoinColumn(name = "equipment_id", nullable = false)
+    private Equipment equipment;
+
+    // Fotografía (Snapshot)
+    @Column(nullable = false, length = 255)
+    private String descriptionSnapshot;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal valueApplied;
+
+    @Column(name = "depreciation_factor_applied", precision = 12, scale = 5, nullable = false)
+    private BigDecimal depreciationFactorApplied;
+
+    // Variables del proceso
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal quantity;
+
+    @Column(name = "daily_use_cost", precision = 12, scale = 2, nullable = false)
+    private BigDecimal dailyUseCost; // valueApplied * depreciationFactorApplied
+}
+==> src/main/java/com/embobinados/apugen_backend/entity/Equipment.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "equipments")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Equipment {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String description;
+
+    @Column(name = "base_value", precision = 12, scale = 2, nullable = false)
+    private BigDecimal baseValue;
+
+    // Precisión de 5 decimales solicitada
+    @Column(name = "depreciation_factor", precision = 12, scale = 5, nullable = false)
+    private BigDecimal depreciationFactor;
+}
+==> src/main/java/com/embobinados/apugen_backend/entity/Process.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+import java.util.List;
+
+@Entity
+@Table(name = "processes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Process {
+    @Id
+    @Column(name = "service_request", length = 20)
+    private String serviceRequest; // ID Manual (Solicitud de Servicio)
+
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
+    @Column(name = "main_process", nullable = false, length = 100)
+    private String mainProcess;
+
+    @Column(nullable = false, length = 100)
+    private String description;
+
+    @Column(length = 50)
+    private String power;
+
+    @Column(length = 100)
+    private String serial;
+
+    @Column(length = 100)
+    private String brand;
+
+    @Column(length = 100)
+    private String location;
+
+    // --- VARIABLES DEL APU (Atributos del Proceso) ---
+    @Column(name = "item_quantity", precision = 12, scale = 2)
+    private BigDecimal itemQuantity; // Cantidad de veces que se realizará el item
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal performance; // Rendimiento del item
+
+    @Column(name = "social_laws_percentage", precision = 5, scale = 2)
+    private BigDecimal socialLawsPercentage; // Porcentaje Leyes Sociales (Ej: 0.75 para 75%)
+
+    @Column(name = "admin_percentage", precision = 5, scale = 2)
+    private BigDecimal adminPercentage; // Porcentaje Administración
+
+    @Column(name = "utility_contingency_percentage", precision = 5, scale = 2)
+    private BigDecimal utilityContingencyPercentage; // Porcentaje Utilidad e Imprevistos
+
+    // --- TOTALES CALCULADOS (Se guardan para congelar el presupuesto) ---
+    @Column(name = "material_unit_cost", precision = 12, scale = 2)
+    private BigDecimal materialUnitCost; // Costo Unitario de Materiales
+
+    @Column(name = "equipment_unit_cost", precision = 12, scale = 2)
+    private BigDecimal equipmentUnitCost; // Costo Unitario de Equipos
+
+    @Column(name = "labor_unit_cost", precision = 12, scale = 2)
+    private BigDecimal laborUnitCost; // Costo Unitario de Mano de Obra
+
+    @Column(name = "direct_unit_cost", precision = 14, scale = 2)
+    private BigDecimal directUnitCost; // Sumatoria de los 3 anteriores
+
+    @Column(name = "admin_cost_value", precision = 14, scale = 2)
+    private BigDecimal adminCostValue; // directUnitCost * adminPercentage
+
+    @Column(name = "total_unit_cost", precision = 14, scale = 2)
+    private BigDecimal totalUnitCost; // directUnitCost + adminCostValue
+
+    @Column(name = "utility_cost_value", precision = 14, scale = 2)
+    private BigDecimal utilityCostValue; // totalUnitCost * utilityContingencyPercentage
+
+    @Column(name = "calculated_unit_price", precision = 14, scale = 2)
+    private BigDecimal calculatedUnitPrice; // totalUnitCost + utilityCostValue
+
+    // El precio propuesto debe ser entero según la regla
+    @Column(name = "proposed_unit_price")
+    private Integer proposedUnitPrice;
+
+    // --- RELACIONES EN CASCADA (Solución al TransientPropertyValueException) ---
+    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProcessMaterial> materials;
+
+    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProcessEquipment> equipments;
+
+    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProcessLabor> labors;
+}
+==> src/main/java/com/embobinados/apugen_backend/entity/ProcessMaterial.java <==
+package com.embobinados.apugen_backend.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "process_materials")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessMaterial {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "process_service_request", nullable = false)
+    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
+    private Process process;
+
+    // Referencia al catálogo maestro
+    @ManyToOne
+    @JoinColumn(name = "material_id", nullable = false)
+    private Material material;
+
+    // Fotografía (Snapshot) de los datos al momento de crear el APU
+    @Column(nullable = false, length = 255)
+    private String descriptionSnapshot;
+
+    @Column(length = 20)
+    private String unitSnapshot;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal costApplied; // El costo que se usó (puede ser el base o uno modificado por el cliente)
+
+    // Variables del proceso
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal quantity;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal amount; // quantity * costApplied
+}
+==> src/main/java/com/embobinados/apugen_backend/entity/Company.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "companies")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Company {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String name;
+}
+==> src/main/java/com/embobinados/apugen_backend/entity/ProcessLabor.java <==
+package com.embobinados.apugen_backend.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "process_labors")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessLabor {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "process_service_request", nullable = false)
+    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
+    private Process process;
+
+    // Referencia al catálogo maestro
+    @ManyToOne
+    @JoinColumn(name = "labor_id", nullable = false)
+    private Labor labor;
+
+    // Fotografía (Snapshot)
+    @Column(nullable = false, length = 255)
+    private String descriptionSnapshot;
+
+    @Column(name = "daily_wage_applied", precision = 12, scale = 2, nullable = false)
+    private BigDecimal dailyWageApplied;
+
+    // Variables del proceso
+    @Column(precision = 5, scale = 2, nullable = false)
+    private BigDecimal dotation; // Porcentaje (Ej: 1.00 para 100%)
+
+    @Column(name = "daily_cost", precision = 12, scale = 2, nullable = false)
+    private BigDecimal dailyCost; // dailyWageApplied * dotation
+}
+==> src/main/java/com/embobinados/apugen_backend/entity/Material.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "materials")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Material {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String description;
+
+    @Column(length = 20)
+    private String unit;
+
+    @Column(name = "base_cost", precision = 12, scale = 2, nullable = false)
+    private BigDecimal baseCost;
+}
+==> src/main/java/com/embobinados/apugen_backend/ApugenBackendApplication.java <==
+package com.embobinados.apugen_backend;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ApugenBackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ApugenBackendApplication.class, args);
+	}
+
+}
+
+==> src/main/java/com/embobinados/apugen_backend/dto/ApuRequestDTO.java <==
+package com.embobinados.apugen_backend.dto;
+
+import lombok.Data;
+import java.math.BigDecimal;
+import java.util.List;
+
+@Data
+public class ApuRequestDTO {
+    // Cabecera
+    private String serviceRequest;
+    private String companyId;
+    private String mainProcess;
+    private String description;
+    private String power;
+    private String serial;
+    private String brand;
+    private String location;
+
+    // Variables del proceso
+    private BigDecimal itemQuantity;
+    private BigDecimal performance;
+    private BigDecimal socialLawsPercentage;
+    private BigDecimal adminPercentage;
+    private BigDecimal utilityContingencyPercentage;
+
+    // Listas de detalles
+    private List<MaterialDTO> materials;
+    private List<EquipmentDTO> equipments;
+    private List<LaborDTO> labors;
+
+    // Clases anidadas para estructurar las listas del JSON
+    @Data
+    public static class MaterialDTO {
+        private String materialId;
+        private BigDecimal quantity;
+    }
+
+    @Data
+    public static class EquipmentDTO {
+        private String equipmentId;
+        private BigDecimal quantity;
+    }
+
+    @Data
+    public static class LaborDTO {
+        private String laborId;
+        private BigDecimal dotation;
+    }
+}
+
+==> src/main/java/com/embobinados/apugen_backend/dto/ApuResponseDTO.java <==
+package com.embobinados.apugen_backend.dto;
 
 import com.embobinados.apugen_backend.entity.Process;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-@Repository
-public interface ProcessRepository extends JpaRepository<Process, String> {
-
-    @Query("""
-    SELECT p FROM Process p 
-    WHERE (:companyId IS NULL OR normalizar(cast(p.company.id as String)) LIKE normalizar(cast(:companyId as String)))
-      AND (:companyName IS NULL OR normalizar(p.company.name) LIKE normalizar(cast(:companyName as String)))
-      AND (:mainProcess IS NULL OR normalizar(p.mainProcess) LIKE normalizar(cast(:mainProcess as String)))
-      AND (:description IS NULL OR normalizar(p.description) LIKE normalizar(cast(:description as String)))
-      AND (:power IS NULL OR normalizar(p.power) LIKE normalizar(cast(:power as String)))
-      AND (:serial IS NULL OR normalizar(p.serial) LIKE normalizar(cast(:serial as String)))
-      AND (:brand IS NULL OR normalizar(p.brand) LIKE normalizar(cast(:brand as String)))
-      AND (:location IS NULL OR normalizar(p.location) LIKE normalizar(cast(:location as String)))
-""")
-    List<Process> searchApus(
-            @Param("companyId") String companyId,
-            @Param("companyName") String companyName,
-            @Param("mainProcess") String mainProcess,
-            @Param("description") String description,
-            @Param("power") String power,
-            @Param("serial") String serial,
-            @Param("brand") String brand,
-            @Param("location") String location
-    );
-}
-==> src/main/java/com/embobinados/apugen_backend/repository/ProcessEquipmentRepository.java <==
-package com.embobinados.apugen_backend.repository;
 import com.embobinados.apugen_backend.entity.ProcessEquipment;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-import java.util.List;
-
-@Repository
-public interface ProcessEquipmentRepository extends JpaRepository<ProcessEquipment, String> {
-    List<ProcessEquipment> findByProcessServiceRequest(String serviceRequest);
-}
-==> src/main/java/com/embobinados/apugen_backend/repository/ProcessMaterialRepository.java <==
-package com.embobinados.apugen_backend.repository;
-import com.embobinados.apugen_backend.entity.ProcessMaterial;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-import java.util.List;
-
-@Repository
-public interface ProcessMaterialRepository extends JpaRepository<ProcessMaterial, String> {
-    List<ProcessMaterial> findByProcessServiceRequest(String serviceRequest);
-}
-==> src/main/java/com/embobinados/apugen_backend/repository/ProcessLaborRepository.java <==
-package com.embobinados.apugen_backend.repository;
 import com.embobinados.apugen_backend.entity.ProcessLabor;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.embobinados.apugen_backend.entity.ProcessMaterial;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 import java.util.List;
 
-@Repository
-public interface ProcessLaborRepository extends JpaRepository<ProcessLabor, String> {
-    List<ProcessLabor> findByProcessServiceRequest(String serviceRequest);
+@Data
+@AllArgsConstructor
+public class ApuResponseDTO {
+    private Process process;
+    private List<ProcessMaterial> materials;
+    private List<ProcessEquipment> equipments;
+    private List<ProcessLabor> labors;
 }
-==> src/main/java/com/embobinados/apugen_backend/repository/EquipmentRepository.java <==
-package com.embobinados.apugen_backend.repository;
-import com.embobinados.apugen_backend.entity.Equipment;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+==> src/main/java/com/embobinados/apugen_backend/exception/GlobalExceptionHandler.java <==
+package com.embobinados.apugen_backend.exception;
 
-@Repository
-public interface EquipmentRepository extends JpaRepository<Equipment, String> {}
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Usamos un 'record' de Java 21 para definir la estructura del JSON de error
+    public record ErrorResponse(
+            LocalDateTime timestamp,
+            int status,
+            String error,
+            String message
+    ) {}
+
+    // Intercepta las RuntimeException (las que lanzamos en el ApuService)
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Error en la Petición",
+                ex.getMessage() // Aquí inyectará "Material no encontrado", etc.
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+}
 ==> src/main/java/com/embobinados/apugen_backend/controllers/CatalogController.java <==
 package com.embobinados.apugen_backend.controllers;
 
@@ -129,6 +481,7 @@ import com.embobinados.apugen_backend.repository.CompanyRepository;
 import com.embobinados.apugen_backend.repository.EquipmentRepository;
 import com.embobinados.apugen_backend.repository.LaborRepository;
 import com.embobinados.apugen_backend.repository.MaterialRepository;
+import com.embobinados.apugen_backend.utilz.StringUtilz;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -164,6 +517,19 @@ public class CatalogController {
                 .orElseThrow(() -> new RuntimeException("No se encontró la empresa con ID: " + id));
 
         return ResponseEntity.ok(empresa);
+    }
+
+    @GetMapping("/empresas/porNombre")
+    public ResponseEntity<List<Company>> getEmpresasPorNombre(
+            @RequestParam("nombre") String nombre
+    ) {
+        String palabraBusqueda = StringUtilz.prepararFiltro(nombre, false);
+
+        if (palabraBusqueda == null) {
+            return ResponseEntity.ok(companyRepository.findAll());
+        }
+
+        return ResponseEntity.ok(companyRepository.buscarPorNombre(palabraBusqueda));
     }
 
     @PostMapping("/empresas")
@@ -228,6 +594,17 @@ public class CatalogController {
         return ResponseEntity.ok(material);
     }
 
+    @GetMapping("/materiales/porDescripcion")
+    public ResponseEntity<List<Material>> buscarMaterialesPorDescripcion(
+            @RequestParam("descripcion") String descripcion
+    ) {
+        String filtro = StringUtilz.prepararFiltro(descripcion, false);
+        if (filtro == null) {
+            return ResponseEntity.ok(materialRepository.findAll());
+        }
+        return ResponseEntity.ok(materialRepository.buscarPorDescripcion(filtro));
+    }
+
     @PostMapping("/materiales")
     public ResponseEntity<Material> crearMaterial(@RequestBody Material material) {
         // Validación crucial por usar IDs manuales
@@ -290,6 +667,17 @@ public class CatalogController {
                 .orElseThrow(() -> new RuntimeException("No se encontró el equipo con ID: " + id));
 
         return ResponseEntity.ok(equipo);
+    }
+
+    @GetMapping("/equipos/porDescripcion")
+    public ResponseEntity<List<Equipment>> buscarEquiposPorDescripcion(
+            @RequestParam("descripcion") String descripcion
+    ) {
+        String filtro = StringUtilz.prepararFiltro(descripcion, false);
+        if (filtro == null) {
+            return ResponseEntity.ok(equipmentRepository.findAll());
+        }
+        return ResponseEntity.ok(equipmentRepository.buscarPorDescripcion(filtro));
     }
 
     @PostMapping("/equipos")
@@ -513,499 +901,6 @@ public class ApuController {
         return ResponseEntity.noContent().build();
     }
 }
-==> src/main/java/com/embobinados/apugen_backend/ApugenBackendApplication.java <==
-package com.embobinados.apugen_backend;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class ApugenBackendApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(ApugenBackendApplication.class, args);
-	}
-
-}
-
-==> src/main/java/com/embobinados/apugen_backend/exception/GlobalExceptionHandler.java <==
-package com.embobinados.apugen_backend.exception;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.time.LocalDateTime;
-
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-
-    // Usamos un 'record' de Java 21 para definir la estructura del JSON de error
-    public record ErrorResponse(
-            LocalDateTime timestamp,
-            int status,
-            String error,
-            String message
-    ) {}
-
-    // Intercepta las RuntimeException (las que lanzamos en el ApuService)
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
-
-        ErrorResponse error = new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Error en la Petición",
-                ex.getMessage() // Aquí inyectará "Material no encontrado", etc.
-        );
-
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-}
-==> src/main/java/com/embobinados/apugen_backend/config/CustomFunctionContributor.java <==
-package com.embobinados.apugen_backend.config;
-
-import org.hibernate.boot.model.FunctionContributions;
-import org.hibernate.boot.model.FunctionContributor;
-import org.hibernate.type.StandardBasicTypes;
-
-public class CustomFunctionContributor implements FunctionContributor {
-
-    @Override
-    public void contributeFunctions(FunctionContributions functionContributions) {
-        functionContributions.getFunctionRegistry()
-                .registerPattern(
-                        "normalizar",
-                        "unaccent(lower(?1))",
-                        functionContributions.getTypeConfiguration()
-                                .getBasicTypeRegistry()
-                                .resolve(StandardBasicTypes.STRING)
-                );
-    }
-}
-==> src/main/java/com/embobinados/apugen_backend/config/CorsConfig.java <==
-package com.embobinados.apugen_backend.config;
-
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-@Configuration
-public class CorsConfig implements WebMvcConfigurer {
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173") // Puerto por defecto de Vite/React
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
-    }
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/ProcessLabor.java <==
-package com.embobinados.apugen_backend.entity;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "process_labors")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProcessLabor {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
-    @ManyToOne
-    @JoinColumn(name = "process_service_request", nullable = false)
-    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
-    private Process process;
-
-    // Referencia al catálogo maestro
-    @ManyToOne
-    @JoinColumn(name = "labor_id", nullable = false)
-    private Labor labor;
-
-    // Fotografía (Snapshot)
-    @Column(nullable = false, length = 255)
-    private String descriptionSnapshot;
-
-    @Column(name = "daily_wage_applied", precision = 12, scale = 2, nullable = false)
-    private BigDecimal dailyWageApplied;
-
-    // Variables del proceso
-    @Column(precision = 5, scale = 2, nullable = false)
-    private BigDecimal dotation; // Porcentaje (Ej: 1.00 para 100%)
-
-    @Column(name = "daily_cost", precision = 12, scale = 2, nullable = false)
-    private BigDecimal dailyCost; // dailyWageApplied * dotation
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/Equipment.java <==
-package com.embobinados.apugen_backend.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "equipments")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Equipment {
-    @Id
-    private String id; // ID Manual
-
-    @Column(nullable = false, length = 255)
-    private String description;
-
-    @Column(name = "base_value", precision = 12, scale = 2, nullable = false)
-    private BigDecimal baseValue;
-
-    // Precisión de 5 decimales solicitada
-    @Column(name = "depreciation_factor", precision = 12, scale = 5, nullable = false)
-    private BigDecimal depreciationFactor;
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/Process.java <==
-package com.embobinados.apugen_backend.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-import java.util.List;
-
-@Entity
-@Table(name = "processes")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Process {
-    @Id
-    @Column(name = "service_request", length = 20)
-    private String serviceRequest; // ID Manual (Solicitud de Servicio)
-
-    @ManyToOne
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
-
-    @Column(name = "main_process", nullable = false, length = 100)
-    private String mainProcess;
-
-    @Column(nullable = false, length = 100)
-    private String description;
-
-    @Column(length = 50)
-    private String power;
-
-    @Column(length = 100)
-    private String serial;
-
-    @Column(length = 100)
-    private String brand;
-
-    @Column(length = 100)
-    private String location;
-
-    // --- VARIABLES DEL APU (Atributos del Proceso) ---
-    @Column(name = "item_quantity", precision = 12, scale = 2)
-    private BigDecimal itemQuantity; // Cantidad de veces que se realizará el item
-
-    @Column(precision = 12, scale = 2)
-    private BigDecimal performance; // Rendimiento del item
-
-    @Column(name = "social_laws_percentage", precision = 5, scale = 2)
-    private BigDecimal socialLawsPercentage; // Porcentaje Leyes Sociales (Ej: 0.75 para 75%)
-
-    @Column(name = "admin_percentage", precision = 5, scale = 2)
-    private BigDecimal adminPercentage; // Porcentaje Administración
-
-    @Column(name = "utility_contingency_percentage", precision = 5, scale = 2)
-    private BigDecimal utilityContingencyPercentage; // Porcentaje Utilidad e Imprevistos
-
-    // --- TOTALES CALCULADOS (Se guardan para congelar el presupuesto) ---
-    @Column(name = "material_unit_cost", precision = 12, scale = 2)
-    private BigDecimal materialUnitCost; // Costo Unitario de Materiales
-
-    @Column(name = "equipment_unit_cost", precision = 12, scale = 2)
-    private BigDecimal equipmentUnitCost; // Costo Unitario de Equipos
-
-    @Column(name = "labor_unit_cost", precision = 12, scale = 2)
-    private BigDecimal laborUnitCost; // Costo Unitario de Mano de Obra
-
-    @Column(name = "direct_unit_cost", precision = 14, scale = 2)
-    private BigDecimal directUnitCost; // Sumatoria de los 3 anteriores
-
-    @Column(name = "admin_cost_value", precision = 14, scale = 2)
-    private BigDecimal adminCostValue; // directUnitCost * adminPercentage
-
-    @Column(name = "total_unit_cost", precision = 14, scale = 2)
-    private BigDecimal totalUnitCost; // directUnitCost + adminCostValue
-
-    @Column(name = "utility_cost_value", precision = 14, scale = 2)
-    private BigDecimal utilityCostValue; // totalUnitCost * utilityContingencyPercentage
-
-    @Column(name = "calculated_unit_price", precision = 14, scale = 2)
-    private BigDecimal calculatedUnitPrice; // totalUnitCost + utilityCostValue
-
-    // El precio propuesto debe ser entero según la regla
-    @Column(name = "proposed_unit_price")
-    private Integer proposedUnitPrice;
-
-    // --- RELACIONES EN CASCADA (Solución al TransientPropertyValueException) ---
-    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProcessMaterial> materials;
-
-    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProcessEquipment> equipments;
-
-    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProcessLabor> labors;
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/ProcessMaterial.java <==
-package com.embobinados.apugen_backend.entity;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "process_materials")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProcessMaterial {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
-    @ManyToOne
-    @JoinColumn(name = "process_service_request", nullable = false)
-    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
-    private Process process;
-
-    // Referencia al catálogo maestro
-    @ManyToOne
-    @JoinColumn(name = "material_id", nullable = false)
-    private Material material;
-
-    // Fotografía (Snapshot) de los datos al momento de crear el APU
-    @Column(nullable = false, length = 255)
-    private String descriptionSnapshot;
-
-    @Column(length = 20)
-    private String unitSnapshot;
-
-    @Column(precision = 12, scale = 2, nullable = false)
-    private BigDecimal costApplied; // El costo que se usó (puede ser el base o uno modificado por el cliente)
-
-    // Variables del proceso
-    @Column(precision = 12, scale = 2, nullable = false)
-    private BigDecimal quantity;
-
-    @Column(precision = 12, scale = 2, nullable = false)
-    private BigDecimal amount; // quantity * costApplied
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/Material.java <==
-package com.embobinados.apugen_backend.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "materials")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Material {
-    @Id
-    private String id; // ID Manual
-
-    @Column(nullable = false, length = 255)
-    private String description;
-
-    @Column(length = 20)
-    private String unit;
-
-    @Column(name = "base_cost", precision = 12, scale = 2, nullable = false)
-    private BigDecimal baseCost;
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/Labor.java <==
-package com.embobinados.apugen_backend.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "labors")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Labor {
-    @Id
-    private String id; // ID Manual
-
-    @Column(nullable = false, length = 255)
-    private String description; // Ej: "Técnico Embobinador Principal"
-
-    @Column(name = "base_daily_wage", precision = 12, scale = 2, nullable = false)
-    private BigDecimal baseDailyWage;
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/Company.java <==
-package com.embobinados.apugen_backend.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Entity
-@Table(name = "companies")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Company {
-    @Id
-    private String id; // ID Manual
-
-    @Column(nullable = false, length = 255)
-    private String name;
-}
-==> src/main/java/com/embobinados/apugen_backend/entity/ProcessEquipment.java <==
-package com.embobinados.apugen_backend.entity;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "process_equipments")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProcessEquipment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
-    @ManyToOne
-    @JoinColumn(name = "process_service_request", nullable = false)
-    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
-    private Process process;
-
-    // Referencia al catálogo maestro
-    @ManyToOne
-    @JoinColumn(name = "equipment_id", nullable = false)
-    private Equipment equipment;
-
-    // Fotografía (Snapshot)
-    @Column(nullable = false, length = 255)
-    private String descriptionSnapshot;
-
-    @Column(precision = 12, scale = 2, nullable = false)
-    private BigDecimal valueApplied;
-
-    @Column(name = "depreciation_factor_applied", precision = 12, scale = 5, nullable = false)
-    private BigDecimal depreciationFactorApplied;
-
-    // Variables del proceso
-    @Column(precision = 12, scale = 2, nullable = false)
-    private BigDecimal quantity;
-
-    @Column(name = "daily_use_cost", precision = 12, scale = 2, nullable = false)
-    private BigDecimal dailyUseCost; // valueApplied * depreciationFactorApplied
-}
-==> src/main/java/com/embobinados/apugen_backend/dto/ApuResponseDTO.java <==
-package com.embobinados.apugen_backend.dto;
-
-import com.embobinados.apugen_backend.entity.Process;
-import com.embobinados.apugen_backend.entity.ProcessEquipment;
-import com.embobinados.apugen_backend.entity.ProcessLabor;
-import com.embobinados.apugen_backend.entity.ProcessMaterial;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-import java.util.List;
-
-@Data
-@AllArgsConstructor
-public class ApuResponseDTO {
-    private Process process;
-    private List<ProcessMaterial> materials;
-    private List<ProcessEquipment> equipments;
-    private List<ProcessLabor> labors;
-}
-==> src/main/java/com/embobinados/apugen_backend/dto/ApuRequestDTO.java <==
-package com.embobinados.apugen_backend.dto;
-
-import lombok.Data;
-import java.math.BigDecimal;
-import java.util.List;
-
-@Data
-public class ApuRequestDTO {
-    // Cabecera
-    private String serviceRequest;
-    private String companyId;
-    private String mainProcess;
-    private String description;
-    private String power;
-    private String serial;
-    private String brand;
-    private String location;
-
-    // Variables del proceso
-    private BigDecimal itemQuantity;
-    private BigDecimal performance;
-    private BigDecimal socialLawsPercentage;
-    private BigDecimal adminPercentage;
-    private BigDecimal utilityContingencyPercentage;
-
-    // Listas de detalles
-    private List<MaterialDTO> materials;
-    private List<EquipmentDTO> equipments;
-    private List<LaborDTO> labors;
-
-    // Clases anidadas para estructurar las listas del JSON
-    @Data
-    public static class MaterialDTO {
-        private String materialId;
-        private BigDecimal quantity;
-    }
-
-    @Data
-    public static class EquipmentDTO {
-        private String equipmentId;
-        private BigDecimal quantity;
-    }
-
-    @Data
-    public static class LaborDTO {
-        private String laborId;
-        private BigDecimal dotation;
-    }
-}
-
 ==> src/main/java/com/embobinados/apugen_backend/service/ApuService.java <==
 package com.embobinados.apugen_backend.service;
 
@@ -1195,4 +1090,172 @@ public class ApuService {
         // Si no consigue nada, Spring Data JPA devuelve [] automáticamente.
         return processRepository.searchApus(companyId, companyName, mainProcess, description, power, serial, brand, location);
     }
+}
+
+==> src/main/java/com/embobinados/apugen_backend/config/CorsConfig.java <==
+package com.embobinados.apugen_backend.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173") // Puerto por defecto de Vite/React
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*");
+    }
+}
+==> src/main/java/com/embobinados/apugen_backend/config/CustomFunctionContributor.java <==
+package com.embobinados.apugen_backend.config;
+
+import org.hibernate.boot.model.FunctionContributions;
+import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.type.StandardBasicTypes;
+
+public class CustomFunctionContributor implements FunctionContributor {
+
+    @Override
+    public void contributeFunctions(FunctionContributions functionContributions) {
+        functionContributions.getFunctionRegistry()
+                .registerPattern(
+                        "normalizar",
+                        "unaccent(lower(?1))",
+                        functionContributions.getTypeConfiguration()
+                                .getBasicTypeRegistry()
+                                .resolve(StandardBasicTypes.STRING)
+                );
+    }
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/LaborRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.Labor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface LaborRepository extends JpaRepository<Labor, String> {
+    @Query("SELECT l FROM Labor l WHERE normalizar(l.description) LIKE normalizar(cast(:descripcion as String))")
+    List<Labor> buscarPorDescripcion(@Param("descripcion") String descripcion);
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/ProcessEquipmentRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.ProcessEquipment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ProcessEquipmentRepository extends JpaRepository<ProcessEquipment, String> {
+    List<ProcessEquipment> findByProcessServiceRequest(String serviceRequest);
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/ProcessMaterialRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.ProcessMaterial;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ProcessMaterialRepository extends JpaRepository<ProcessMaterial, String> {
+    List<ProcessMaterial> findByProcessServiceRequest(String serviceRequest);
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/CompanyRepository.java <==
+package com.embobinados.apugen_backend.repository;
+
+import com.embobinados.apugen_backend.entity.Company;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface CompanyRepository extends JpaRepository<Company, String> {
+
+    @Query("SELECT c FROM Company WHERE normalizar(c.name) LIKE normalizar(cast(:nombre as String))")
+    List<Company> buscarPorNombre(@Param("nombre") String nombre);
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/MaterialRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.Material;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface MaterialRepository extends JpaRepository<Material, String> {
+    @Query("SELECT m FROM Material m WHERE normalizar(m.description) LIKE normalizar(cast(:descripcion as String))")
+    List<Material> buscarPorDescripcion(@Param("descripcion") String descripcion);
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/ProcessRepository.java <==
+package com.embobinados.apugen_backend.repository;
+
+import com.embobinados.apugen_backend.entity.Process;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ProcessRepository extends JpaRepository<Process, String> {
+
+    @Query("""
+    SELECT p FROM Process p 
+    WHERE (:companyId IS NULL OR normalizar(cast(p.company.id as String)) LIKE normalizar(cast(:companyId as String)))
+      AND (:companyName IS NULL OR normalizar(p.company.name) LIKE normalizar(cast(:companyName as String)))
+      AND (:mainProcess IS NULL OR normalizar(p.mainProcess) LIKE normalizar(cast(:mainProcess as String)))
+      AND (:description IS NULL OR normalizar(p.description) LIKE normalizar(cast(:description as String)))
+      AND (:power IS NULL OR normalizar(p.power) LIKE normalizar(cast(:power as String)))
+      AND (:serial IS NULL OR normalizar(p.serial) LIKE normalizar(cast(:serial as String)))
+      AND (:brand IS NULL OR normalizar(p.brand) LIKE normalizar(cast(:brand as String)))
+      AND (:location IS NULL OR normalizar(p.location) LIKE normalizar(cast(:location as String)))
+""")
+    List<Process> searchApus(
+            @Param("companyId") String companyId,
+            @Param("companyName") String companyName,
+            @Param("mainProcess") String mainProcess,
+            @Param("description") String description,
+            @Param("power") String power,
+            @Param("serial") String serial,
+            @Param("brand") String brand,
+            @Param("location") String location
+    );
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/ProcessLaborRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.ProcessLabor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ProcessLaborRepository extends JpaRepository<ProcessLabor, String> {
+    List<ProcessLabor> findByProcessServiceRequest(String serviceRequest);
+}
+==> src/main/java/com/embobinados/apugen_backend/repository/EquipmentRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.Equipment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface EquipmentRepository extends JpaRepository<Equipment, String> {
+    @Query("SELECT e FROM Equipment e WHERE normalizar(e.description) LIKE normalizar(cast(:descripcion as String))")
+    List<Equipment> buscarPorDescripcion(@Param("descripcion") String descripcion);
 }

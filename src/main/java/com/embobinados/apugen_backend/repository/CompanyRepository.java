@@ -11,6 +11,6 @@ import java.util.List;
 @Repository
 public interface CompanyRepository extends JpaRepository<Company, String> {
 
-    @Query("SELECT c FROM Company WHERE normalizar(c.name) LIKE normalizar(cast(:nombre as String))")
+    @Query("SELECT c FROM Company c WHERE normalizar(c.name) LIKE normalizar(cast(:nombre as String))")
     List<Company> buscarPorNombre(@Param("nombre") String nombre);
 }

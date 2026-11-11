@@ -35,7 +35,7 @@ Para levantar este proyecto en tu entorno local necesitas:
 2. **Levantar la Base de Datos (Docker Compose):**
    Ejecuta el siguiente comando para iniciar el contenedor de PostgreSQL 16 y pgAdmin 4:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
    *Nota: La base de datos se expone en el puerto `5432`.*
 
