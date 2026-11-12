@@ -2,26 +2,26 @@
 // CATÁLOGOS MAESTROS
 // ==========================================
 export interface Company {
-    id: number;
+    id: string;
     name: string;
 }
 
 export interface Material {
-    id: number;
+    id: string;
     description: string;
     unit: string;
     baseCost: number;
 }
 
 export interface Equipment {
-    id: number;
+    id: string;
     description: string;
     baseValue: number;
     depreciationFactor: number;
 }
 
 export interface Labor {
-    id: number;
+    id: string;
     description: string;
     baseDailyWage: number;
 }
@@ -30,7 +30,7 @@ export interface Labor {
 // DETALLES DEL PROCESO (SNAPSHOTS)
 // ==========================================
 export interface ProcessMaterial {
-    id: number;
+    id: string;
     material: Material;
     descriptionSnapshot: string;
     unitSnapshot: string;
@@ -40,7 +40,7 @@ export interface ProcessMaterial {
 }
 
 export interface ProcessEquipment {
-    id: number;
+    id: string;
     equipment: Equipment;
     descriptionSnapshot: string;
     valueApplied: number;
@@ -50,7 +50,7 @@ export interface ProcessEquipment {
 }
 
 export interface ProcessLabor {
-    id: number;
+    id: string;
     labor: Labor;
     descriptionSnapshot: string;
     dailyWageApplied: number;
@@ -64,10 +64,12 @@ export interface ProcessLabor {
 export interface Process {
     serviceRequest: string;
     company: Company;
-    processType: string;
+    mainProcess: string;
+    description: string;
     power?: string;    // Opcional
     serial?: string;   // Opcional
     brand?: string;    // Opcional
+    location?: string;
     
     // Variables de Cálculo
     itemQuantity: number;
