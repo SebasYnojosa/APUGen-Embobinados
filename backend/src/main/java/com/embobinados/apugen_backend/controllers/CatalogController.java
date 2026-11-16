@@ -220,6 +220,7 @@ public class CatalogController {
     }
 
     // @PutMapping("/equipos/{id}")
+    @PutMapping("/equipos")
     public ResponseEntity<Equipment> actualizarEquipo(
             @RequestParam("id") String id,
             @RequestBody Equipment detalles
