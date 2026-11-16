@@ -1,0 +1,2789 @@
+==> frontend/src/services/api.ts <==
+import axios from 'axios';
+
+// Creamos una instancia de Axios con la URL base de nuestro Spring Boot
+const api = axios.create({
+    baseURL: 'http://localhost:8080/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Interceptor opcional para manejar errores globalmente en el frontend
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Aquí capturamos el JSON limpio que arroja tu GlobalExceptionHandler de Java
+        if (error.response && error.response.data) {
+            console.error("Error del backend:", error.response.data.message);
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default api;
+==> frontend/src/services/apuServices.ts <==
+import api from './api';
+import type { Process, ApuResponseDTO } from '../types';
+
+export const apuService = {
+    // Obtener todos los APUs o filtrar por empresa
+    getAllApus: async (companyId?: string): Promise<Process[]> => {
+        const params = companyId ? { companyId } : {};
+        const response = await api.get<Process[]>('/apus', { params });
+        return response.data;
+    },
+
+    // Buscador avanzado con múltiples parámetros dinámicos
+    searchApus: async (filters: Record<string, string | number | boolean>): Promise<Process[]> => {
+        const response = await api.get<Process[]>('/apus/buscar', { params: filters });
+        return response.data;
+    },
+
+    // Obtener un APU específico con todas sus listas de detalles
+    getApuById: async (serviceRequest: string): Promise<ApuResponseDTO> => {
+        const response = await api.get<ApuResponseDTO>(`/apus/${serviceRequest}`);
+        return response.data;
+    },
+
+    // Eliminar un APU en cascada
+    deleteApu: async (serviceRequest: string): Promise<void> => {
+        await api.delete(`/apus/${serviceRequest}`);
+    }
+};
+==> frontend/src/services/catalogServices.ts <==
+import api from './api';
+import type { Company, Material, Equipment, Labor } from '../types';
+
+export const catalogService = {
+    // ==========================================
+    // EMPRESAS
+    // ==========================================
+    getCompanies: async (): Promise<Company[]> => {
+        const response = await api.get<Company[]>('/catalogos/empresas');
+        return response.data;
+    },
+    createCompany: async (company: Company): Promise<Company> => {
+        const response = await api.post<Company>('/catalogos/empresas', company);
+        return response.data;
+    },
+    updateCompany: async (id: string, company: Partial<Company>): Promise<Company> => {
+        const response = await api.put<Company>(`/catalogos/empresas?id=${id}`, company);
+        return response.data;
+    },
+    deleteCompany: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/empresas?id=${id}`);
+    },
+
+    // ==========================================
+    // MATERIALES
+    // ==========================================
+    getMaterials: async (): Promise<Material[]> => {
+        const response = await api.get<Material[]>('/catalogos/materiales');
+        return response.data;
+    },
+    createMaterial: async (material: Material): Promise<Material> => {
+        const response = await api.post<Material>('/catalogos/materiales', material);
+        return response.data;
+    },
+    updateMaterial: async (id: string, material: Partial<Material>): Promise<Material> => {
+        const response = await api.put<Material>(`/catalogos/materiales?id=${id}`, material);
+        return response.data;
+    },
+    deleteMaterial: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/materiales?id=${id}`);
+    },
+
+    // ==========================================
+    // EQUIPOS
+    // ==========================================
+    getEquipments: async (): Promise<Equipment[]> => {
+        const response = await api.get<Equipment[]>('/catalogos/equipos');
+        return response.data;
+    },
+    createEquipment: async (equipment: Equipment): Promise<Equipment> => {
+        const response = await api.post<Equipment>('/catalogos/equipos', equipment);
+        return response.data;
+    },
+    updateEquipment: async (id: string, equipment: Partial<Equipment>): Promise<Equipment> => {
+        const response = await api.put<Equipment>(`/catalogos/equipos?id=${id}`, equipment);
+        return response.data;
+    },
+    deleteEquipment: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/equipos?id=${id}`);
+    },
+
+    // ==========================================
+    // MANO DE OBRA (CARGOS)
+    // ==========================================
+    getLabors: async (): Promise<Labor[]> => {
+        const response = await api.get<Labor[]>('/catalogos/cargos');
+        return response.data;
+    },
+    createLabor: async (labor: Labor): Promise<Labor> => {
+        const response = await api.post<Labor>('/catalogos/cargos', labor);
+        return response.data;
+    },
+    updateLabor: async (id: string, labor: Partial<Labor>): Promise<Labor> => {
+        const response = await api.put<Labor>(`/catalogos/cargos?id=${id}`, labor);
+        return response.data;
+    },
+    deleteLabor: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/cargos?id=${id}`);
+    }
+};
+==> frontend/src/App.css <==
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 0;
+
+  .logo {
+    height: 18px;
+  }
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
+  }
+}
+
+==> frontend/src/main.tsx <==
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './index.css';
+import App from './App.tsx';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>,
+);
+==> frontend/src/types/index.ts <==
+// ==========================================
+// CATÁLOGOS MAESTROS
+// ==========================================
+export interface Company {
+    id: string;
+    name: string;
+}
+
+export interface Material {
+    id: string;
+    description: string;
+    unit: string;
+    baseCost: number;
+}
+
+export interface Equipment {
+    id: string;
+    description: string;
+    baseValue: number;
+    depreciationFactor: number;
+}
+
+export interface Labor {
+    id: string;
+    description: string;
+    baseDailyWage: number;
+}
+
+// ==========================================
+// DETALLES DEL PROCESO (SNAPSHOTS)
+// ==========================================
+export interface ProcessMaterial {
+    id: string;
+    material: Material;
+    descriptionSnapshot: string;
+    unitSnapshot: string;
+    costApplied: number;
+    quantity: number;
+    amount: number;
+}
+
+export interface ProcessEquipment {
+    id: string;
+    equipment: Equipment;
+    descriptionSnapshot: string;
+    valueApplied: number;
+    depreciationFactorApplied: number;
+    quantity: number;
+    dailyUseCost: number;
+}
+
+export interface ProcessLabor {
+    id: string;
+    labor: Labor;
+    descriptionSnapshot: string;
+    dailyWageApplied: number;
+    dotation: number;
+    dailyCost: number;
+}
+
+// ==========================================
+// CABECERA DEL APU (PROCESO)
+// ==========================================
+export interface Process {
+    serviceRequest: string;
+    company: Company;
+    mainProcess: string;
+    description: string;
+    power?: string;    // Opcional
+    serial?: string;   // Opcional
+    brand?: string;    // Opcional
+    location?: string;
+    
+    // Variables de Cálculo
+    itemQuantity: number;
+    performance: number;
+    socialLawsPercentage: number;
+    adminPercentage: number;
+    utilityContingencyPercentage: number;
+    
+    // Totales
+    materialUnitCost: number;
+    equipmentUnitCost: number;
+    laborUnitCost: number;
+    directUnitCost: number;
+    adminCostValue: number;
+    totalUnitCost: number;
+    utilityCostValue: number;
+    calculatedUnitPrice: number;
+    proposedUnitPrice: number;
+}
+
+// ==========================================
+// DTO DE RESPUESTA COMPLETA (Para el endpoint GET)
+// ==========================================
+export interface ApuResponseDTO {
+    process: Process;
+    materials: ProcessMaterial[];
+    equipments: ProcessEquipment[];
+    labors: ProcessLabor[];
+}
+==> frontend/src/index.css <==
+@import "tailwindcss";
+@plugin "daisyui";
+==> frontend/src/pages/LaborManager.tsx <==
+import { useState, useEffect } from 'react';
+import { catalogService } from '../services/catalogServices';
+import type { Labor } from '../types';
+
+export default function LaborManager() {
+    const [labors, setLabors] = useState<Labor[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const [currentLabor, setCurrentLabor] = useState<Labor>({
+        id: '',
+        description: '',
+        baseDailyWage: 0
+    });
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+
+    const fetchLabors = async () => {
+        try {
+            setLoading(true);
+            const data = await catalogService.getLabors();
+            setLabors(data);
+            setError(null);
+        } catch (err) {
+            setError('Error al cargar los cargos desde el servidor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchLabors();
+    }, []);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCurrentLabor(prev => ({
+            ...prev,
+            [name]: name === 'baseDailyWage' ? parseFloat(value) || 0 : value
+        }));
+    };
+
+    const openCreateModal = () => {
+        setIsEditing(false);
+        setCurrentLabor({ id: '', description: '', baseDailyWage: 0 });
+        (document.getElementById('modal_labor') as HTMLDialogElement)?.showModal();
+    };
+
+    const openEditModal = (labor: Labor) => {
+        setIsEditing(true);
+        setCurrentLabor(labor);
+        (document.getElementById('modal_labor') as HTMLDialogElement)?.showModal();
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            if (isEditing) {
+                await catalogService.updateLabor(currentLabor.id, currentLabor);
+                setSuccessMessage('Cargo actualizado exitosamente.');
+            } else {
+                await catalogService.createLabor(currentLabor);
+                setSuccessMessage('Cargo registrado exitosamente.');
+            }
+            fetchLabors();
+            (document.getElementById('modal_labor') as HTMLDialogElement)?.close();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Error al guardar el cargo.');
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm(`¿Estás seguro de eliminar el cargo con ID: ${id}?`)) return;
+        setError(null);
+        setSuccessMessage(null);
+        try {
+            await catalogService.deleteLabor(id);
+            setSuccessMessage('Cargo eliminado correctamente.');
+            fetchLabors();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'No se puede eliminar el cargo porque está en uso.');
+        }
+    };
+
+    return (
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Gestión de Mano de Obra</h1>
+                    <p className="text-sm text-base-content/70">Cargos técnicos y sus salarios diarios base.</p>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>+ Nuevo Cargo</button>
+            </div>
+
+            {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
+            {successMessage && <div className="alert alert-success mb-4 shadow-sm"><span>{successMessage}</span></div>}
+
+            <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Descripción del Cargo</th>
+                        <th>Salario Diario Base</th>
+                        <th className="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading ? (
+                        <tr><td colSpan={4} className="text-center py-6">Cargando cargos...</td></tr>
+                    ) : labors.length === 0 ? (
+                        <tr><td colSpan={4} className="text-center py-6">No hay cargos registrados.</td></tr>
+                    ) : (
+                        labors.map((lab) => (
+                            <tr key={lab.id}>
+                                <td className="font-semibold">{lab.id}</td>
+                                <td>{lab.description}</td>
+                                <td>${lab.baseDailyWage.toFixed(2)}</td>
+                                <td className="text-center space-x-2">
+                                    <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditModal(lab)}>Editar</button>
+                                    <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(lab.id)}>Eliminar</button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* MODAL */}
+            <dialog id="modal_labor" className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg mb-4">{isEditing ? 'Editar Cargo' : 'Registrar Nuevo Cargo'}</h3>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">ID del Cargo*</span></label>
+                            <input type="text" name="id" value={currentLabor.id} onChange={handleInputChange} className="input input-bordered" placeholder="Ej: LAB-01" required disabled={isEditing} />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Descripción / Título del Cargo*</span></label>
+                            <input type="text" name="description" value={currentLabor.description} onChange={handleInputChange} className="input input-bordered" placeholder="Ej: Técnico Embobinador Principal" required />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Salario Diario Base*</span></label>
+                            <input type="number" step="0.01" name="baseDailyWage" value={currentLabor.baseDailyWage} onChange={handleInputChange} className="input input-bordered" placeholder="0.00" required />
+                        </div>
+                        <div className="modal-action">
+                            <button type="submit" className="btn btn-primary">{isEditing ? 'Actualizar' : 'Guardar'}</button>
+                            <button type="button" className="btn" onClick={() => (document.getElementById('modal_labor') as HTMLDialogElement)?.close()}>Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    );
+}
+==> frontend/src/pages/MaterialManager.tsx <==
+import { useState, useEffect } from 'react';
+import { catalogService } from '../services/catalogServices';
+import type { Material } from '../types';
+
+export default function MaterialManager() {
+    const [materials, setMaterials] = useState<Material[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Estado del formulario (sirve tanto para crear como para editar)
+    const [currentMaterial, setCurrentMaterial] = useState<Material>({
+        id: '',
+        description: '',
+        unit: '',
+        baseCost: 0
+    });
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+
+    // Cargar materiales
+    const fetchMaterials = async () => {
+        try {
+            setLoading(true);
+            const data = await catalogService.getMaterials();
+            setMaterials(data);
+            setError(null);
+        } catch (err: any) {
+            setError('Error al cargar los materiales del servidor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchMaterials();
+    }, []);
+
+    // Manejar cambios en los inputs
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCurrentMaterial(prev => ({
+            ...prev,
+            [name]: name === 'baseCost' ? parseFloat(value) || 0 : value
+        }));
+    };
+
+    // Abrir modal para Crear
+    const openCreateModal = () => {
+        setIsEditing(false);
+        setCurrentMaterial({ id: '', description: '', unit: '', baseCost: 0 });
+        (document.getElementById('modal_material') as HTMLDialogElement)?.showModal();
+    };
+
+    // Abrir modal para Editar
+    const openEditModal = (mat: Material) => {
+        setIsEditing(true);
+        setCurrentMaterial(mat);
+        (document.getElementById('modal_material') as HTMLDialogElement)?.showModal();
+    };
+
+    // Guardar (Crear o Actualizar)
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            if (isEditing) {
+                await catalogService.updateMaterial(currentMaterial.id, currentMaterial);
+                setSuccessMessage('Material actualizado exitosamente.');
+            } else {
+                await catalogService.createMaterial(currentMaterial);
+                setSuccessMessage('Material registrado exitosamente.');
+            }
+            fetchMaterials();
+            (document.getElementById('modal_material') as HTMLDialogElement)?.close();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Ocurrió un error al procesar la solicitud.');
+        }
+    };
+
+    // Eliminar Material
+    const handleDelete = async (id: string) => {
+        if (!confirm(`¿Estás seguro de que deseas eliminar el material con ID: ${id}?`)) return;
+
+        setError(null);
+        setSuccessMessage(null);
+        try {
+            await catalogService.deleteMaterial(id);
+            setSuccessMessage('Material eliminado correctamente.');
+            fetchMaterials();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'No se puede eliminar el material porque está en uso.');
+        }
+    };
+
+    return (
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Gestión de Materiales</h1>
+                    <p className="text-sm text-base-content/70">Administra los insumos y costos base para los APUs.</p>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>
+                    + Nuevo Material
+                </button>
+            </div>
+
+            {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
+            {successMessage && <div className="alert alert-success mb-4 shadow-sm"><span>{successMessage}</span></div>}
+
+            {/* --- TABLA DE MATERIALES --- */}
+            <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Unidad</th>
+                        <th>Costo Base</th>
+                        <th className="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading ? (
+                        <tr><td colSpan={5} className="text-center py-6">Cargando materiales...</td></tr>
+                    ) : materials.length === 0 ? (
+                        <tr><td colSpan={5} className="text-center py-6">No hay materiales registrados.</td></tr>
+                    ) : (
+                        materials.map((mat) => (
+                            <tr key={mat.id}>
+                                <td className="font-semibold">{mat.id}</td>
+                                <td>{mat.description}</td>
+                                <td><span className="badge badge-ghost">{mat.unit}</span></td>
+                                <td>${mat.baseCost.toFixed(2)}</td>
+                                <td className="text-center space-x-2">
+                                    <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditModal(mat)}>
+                                        Editar
+                                    </button>
+                                    <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(mat.id)}>
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* --- MODAL UNIFICADO PARA CREAR / EDITAR --- */}
+            <dialog id="modal_material" className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg mb-4">
+                        {isEditing ? 'Editar Material' : 'Registrar Nuevo Material'}
+                    </h3>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">ID del Material*</span></label>
+                            <input
+                                type="text"
+                                name="id"
+                                value={currentMaterial.id}
+                                onChange={handleInputChange}
+                                className="input input-bordered"
+                                placeholder="Ej: MAT-001"
+                                required
+                                disabled={isEditing} // El ID no se debe cambiar si se está editando
+                            />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Descripción*</span></label>
+                            <input
+                                type="text"
+                                name="description"
+                                value={currentMaterial.description}
+                                onChange={handleInputChange}
+                                className="input input-bordered"
+                                placeholder="Ej: Alambre de Cobre esmaltado"
+                                required
+                            />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Unidad de Medida*</span></label>
+                            <input
+                                type="text"
+                                name="unit"
+                                value={currentMaterial.unit}
+                                onChange={handleInputChange}
+                                className="input input-bordered"
+                                placeholder="Ej: kg, m, rollos"
+                                required
+                            />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Costo Base*</span></label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                name="baseCost"
+                                value={currentMaterial.baseCost}
+                                onChange={handleInputChange}
+                                className="input input-bordered"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+                        <div className="modal-action">
+                            <button type="submit" className="btn btn-primary">
+                                {isEditing ? 'Actualizar' : 'Guardar'}
+                            </button>
+                            <button type="button" className="btn" onClick={() => (document.getElementById('modal_material') as HTMLDialogElement)?.close()}>
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    );
+}
+==> frontend/src/pages/CompanyManager.tsx <==
+import { useState, useEffect } from 'react';
+import { catalogService } from '../services/catalogServices';
+import type { Company } from '../types';
+
+export default function CompanyManager() {
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const [currentCompany, setCurrentCompany] = useState<Company>({ id: '', name: '' });
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+
+    const fetchCompanies = async () => {
+        try {
+            setLoading(true);
+            const data = await catalogService.getCompanies();
+            setCompanies(data);
+            setError(null);
+        } catch (err) {
+            setError('Error al cargar las empresas desde el servidor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCompanies();
+    }, []);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCurrentCompany(prev => ({ ...prev, [name]: value }));
+    };
+
+    const openCreateModal = () => {
+        setIsEditing(false);
+        setCurrentCompany({ id: '', name: '' });
+        (document.getElementById('modal_company') as HTMLDialogElement)?.showModal();
+    };
+
+    const openEditModal = (company: Company) => {
+        setIsEditing(true);
+        setCurrentCompany(company);
+        (document.getElementById('modal_company') as HTMLDialogElement)?.showModal();
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            if (isEditing) {
+                await catalogService.updateCompany(currentCompany.id, currentCompany);
+                setSuccessMessage('Empresa actualizada exitosamente.');
+            } else {
+                await catalogService.createCompany(currentCompany);
+                setSuccessMessage('Empresa registrada exitosamente.');
+            }
+            fetchCompanies();
+            (document.getElementById('modal_company') as HTMLDialogElement)?.close();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Error al guardar la empresa.');
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm(`¿Estás seguro de eliminar la empresa con ID: ${id}?`)) return;
+        setError(null);
+        setSuccessMessage(null);
+        try {
+            await catalogService.deleteCompany(id);
+            setSuccessMessage('Empresa eliminada correctamente.');
+            fetchCompanies();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'No se puede eliminar la empresa porque está asociada a un APU.');
+        }
+    };
+
+    return (
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Gestión de Empresas</h1>
+                    <p className="text-sm text-base-content/70">Catálogo de clientes y empresas solicitantes.</p>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>+ Nueva Empresa</button>
+            </div>
+
+            {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
+            {successMessage && <div className="alert alert-success mb-4 shadow-sm"><span>{successMessage}</span></div>}
+
+            <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre de la Empresa</th>
+                        <th className="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading ? (
+                        <tr><td colSpan={3} className="text-center py-6">Cargando empresas...</td></tr>
+                    ) : companies.length === 0 ? (
+                        <tr><td colSpan={3} className="text-center py-6">No hay empresas registradas.</td></tr>
+                    ) : (
+                        companies.map((comp) => (
+                            <tr key={comp.id}>
+                                <td className="font-semibold">{comp.id}</td>
+                                <td>{comp.name}</td>
+                                <td className="text-center space-x-2">
+                                    <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditModal(comp)}>Editar</button>
+                                    <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(comp.id)}>Eliminar</button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* MODAL */}
+            <dialog id="modal_company" className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg mb-4">{isEditing ? 'Editar Empresa' : 'Registrar Nueva Empresa'}</h3>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">ID de la Empresa*</span></label>
+                            <input type="text" name="id" value={currentCompany.id} onChange={handleInputChange} className="input input-bordered" placeholder="Ej: EMP-01" required disabled={isEditing} />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Nombre de la Empresa*</span></label>
+                            <input type="text" name="name" value={currentCompany.name} onChange={handleInputChange} className="input input-bordered" placeholder="Ej: CVG Ferrominera Orinoco" required />
+                        </div>
+                        <div className="modal-action">
+                            <button type="submit" className="btn btn-primary">{isEditing ? 'Actualizar' : 'Guardar'}</button>
+                            <button type="button" className="btn" onClick={() => (document.getElementById('modal_company') as HTMLDialogElement)?.close()}>Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    );
+}
+==> frontend/src/pages/ApuList.tsx <==
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { apuService } from '../services/apuServices';
+import type { Process } from '../types';
+
+export default function ApuList() {
+    const [apus, setApus] = useState<Process[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchApus = async () => {
+        try {
+            setLoading(true);
+            const data = await apuService.getAllApus();
+            setApus(data);
+            setError(null);
+        } catch (err) {
+            setError('Error al cargar los APUs desde el servidor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchApus();
+    }, []);
+
+    const handleDelete = async (serviceRequest: string) => {
+        if (!confirm(`¿Estás seguro de eliminar el APU con orden: ${serviceRequest}?`)) return;
+        try {
+            await apuService.deleteApu(serviceRequest);
+            fetchApus();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Error al eliminar el APU');
+        }
+    };
+
+    return (
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Listado de APUs</h1>
+                    <p className="text-sm text-base-content/70">Presupuestos y análisis de precios unitarios registrados.</p>
+                </div>
+                <Link to="/apus/nuevo" className="btn btn-primary btn-sm">+ Nuevo APU</Link>
+            </div>
+
+            {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
+
+            <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                    <thead>
+                    <tr>
+                        <th>Orden / Solicitud</th>
+                        <th>Empresa</th>
+                        <th>Proceso Principal</th>
+                        <th>Descripción</th>
+                        <th>Precio Propuesto</th>
+                        <th className="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading ? (
+                        <tr><td colSpan={6} className="text-center py-6">Cargando APUs...</td></tr>
+                    ) : apus.length === 0 ? (
+                        <tr><td colSpan={6} className="text-center py-6">No hay APUs registrados.</td></tr>
+                    ) : (
+                        apus.map((apu) => (
+                            <tr key={apu.serviceRequest}>
+                                <td className="font-semibold">{apu.serviceRequest}</td>
+                                <td>{apu.company?.name || apu.company?.id}</td>
+                                <td>{apu.mainProcess}</td>
+                                <td>{apu.description}</td>
+                                <td className="font-bold text-primary">${apu.proposedUnitPrice?.toLocaleString()}</td>
+                                <td className="text-center space-x-2">
+                                    <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(apu.serviceRequest)}>
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+==> frontend/src/pages/EquipmentManager.tsx <==
+import { useState, useEffect } from 'react';
+import { catalogService } from '../services/catalogServices';
+import type { Equipment } from '../types';
+
+export default function EquipmentManager() {
+    const [equipments, setEquipments] = useState<Equipment[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const [currentEquipment, setCurrentEquipment] = useState<Equipment>({
+        id: '',
+        description: '',
+        baseValue: 0,
+        depreciationFactor: 0
+    });
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+
+    const fetchEquipments = async () => {
+        try {
+            setLoading(true);
+            const data = await catalogService.getEquipments();
+            setEquipments(data);
+            setError(null);
+        } catch (err) {
+            setError('Error al cargar los equipos desde el servidor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchEquipments();
+    }, []);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCurrentEquipment(prev => ({
+            ...prev,
+            [name]: name === 'baseValue' || name === 'depreciationFactor' ? parseFloat(value) || 0 : value
+        }));
+    };
+
+    const openCreateModal = () => {
+        setIsEditing(false);
+        setCurrentEquipment({ id: '', description: '', baseValue: 0, depreciationFactor: 0 });
+        (document.getElementById('modal_equipment') as HTMLDialogElement)?.showModal();
+    };
+
+    const openEditModal = (eq: Equipment) => {
+        setIsEditing(true);
+        setCurrentEquipment(eq);
+        (document.getElementById('modal_equipment') as HTMLDialogElement)?.showModal();
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            if (isEditing) {
+                await catalogService.updateEquipment(currentEquipment.id, currentEquipment);
+                setSuccessMessage('Equipo actualizado exitosamente.');
+            } else {
+                await catalogService.createEquipment(currentEquipment);
+                setSuccessMessage('Equipo registrado exitosamente.');
+            }
+            fetchEquipments();
+            (document.getElementById('modal_equipment') as HTMLDialogElement)?.close();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Error al guardar el equipo.');
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm(`¿Estás seguro de eliminar el equipo con ID: ${id}?`)) return;
+        setError(null);
+        setSuccessMessage(null);
+        try {
+            await catalogService.deleteEquipment(id);
+            setSuccessMessage('Equipo eliminado correctamente.');
+            fetchEquipments();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'No se puede eliminar el equipo porque está en uso.');
+        }
+    };
+
+    return (
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Gestión de Equipos</h1>
+                    <p className="text-sm text-base-content/70">Maquinaria, herramientas y factores de depreciación diaria.</p>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>+ Nuevo Equipo</button>
+            </div>
+
+            {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
+            {successMessage && <div className="alert alert-success mb-4 shadow-sm"><span>{successMessage}</span></div>}
+
+            <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Valor Base</th>
+                        <th>Factor Depreciación</th>
+                        <th className="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading ? (
+                        <tr><td colSpan={5} className="text-center py-6">Cargando equipos...</td></tr>
+                    ) : equipments.length === 0 ? (
+                        <tr><td colSpan={5} className="text-center py-6">No hay equipos registrados.</td></tr>
+                    ) : (
+                        equipments.map((eq) => (
+                            <tr key={eq.id}>
+                                <td className="font-semibold">{eq.id}</td>
+                                <td>{eq.description}</td>
+                                <td>${eq.baseValue.toFixed(2)}</td>
+                                <td><span className="badge badge-ghost font-mono">{eq.depreciationFactor.toFixed(5)}</span></td>
+                                <td className="text-center space-x-2">
+                                    <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditModal(eq)}>Editar</button>
+                                    <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(eq.id)}>Eliminar</button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* MODAL */}
+            <dialog id="modal_equipment" className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg mb-4">{isEditing ? 'Editar Equipo' : 'Registrar Nuevo Equipo'}</h3>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">ID del Equipo*</span></label>
+                            <input type="text" name="id" value={currentEquipment.id} onChange={handleInputChange} className="input input-bordered" placeholder="Ej: EQ-001" required disabled={isEditing} />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Descripción*</span></label>
+                            <input type="text" name="description" value={currentEquipment.description} onChange={handleInputChange} className="input input-bordered" placeholder="Ej: Horno de Secado Térmico" required />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Valor Base*</span></label>
+                            <input type="number" step="0.01" name="baseValue" value={currentEquipment.baseValue} onChange={handleInputChange} className="input input-bordered" placeholder="0.00" required />
+                        </div>
+                        <div className="form-control">
+                            <label className="label"><span className="label-text">Factor de Depreciación (5 decimales)*</span></label>
+                            <input type="number" step="0.00001" name="depreciationFactor" value={currentEquipment.depreciationFactor} onChange={handleInputChange} className="input input-bordered font-mono" placeholder="0.00010" required />
+                        </div>
+                        <div className="modal-action">
+                            <button type="submit" className="btn btn-primary">{isEditing ? 'Actualizar' : 'Guardar'}</button>
+                            <button type="button" className="btn" onClick={() => (document.getElementById('modal_equipment') as HTMLDialogElement)?.close()}>Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    );
+}
+==> frontend/src/pages/ApuForm.tsx <==
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+export default function ApuForm() {
+    const navigate = useNavigate();
+
+    const [header, setHeader] = useState({
+        serviceRequest: '', companyId: '', companyName: '', mainProcess: '', description: '',
+        power: '', serial: '', brand: '', location: '',
+        itemQuantity: 1, performance: 1, socialLawsPercentage: 0.75,
+        adminPercentage: 0.15, utilityContingencyPercentage: 0.10
+    });
+
+    const [materials, setMaterials] = useState<any[]>([]);
+    const [equipments, setEquipments] = useState<any[]>([]);
+    const [labors, setLabors] = useState<any[]>([]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setHeader(prev => ({ ...prev, [name]: value }));
+    };
+
+    // --- MANEJADORES DE LISTAS ---
+    const addMaterial = () => setMaterials([...materials, { materialId: '', description: '', unit: '', price: '', quantity: '' }]);
+    const removeMaterial = (index: number) => setMaterials(materials.filter((_, i) => i !== index));
+    const updateMaterial = (index: number, field: string, value: string | number) => {
+        const newMaterials = [...materials];
+        newMaterials[index] = { ...newMaterials[index], [field]: value };
+        setMaterials(newMaterials);
+    };
+
+    const addEquipment = () => setEquipments([...equipments, { equipmentId: '', description: '', baseValue: '', depreciation: '', quantity: '' }]);
+    const removeEquipment = (index: number) => setEquipments(equipments.filter((_, i) => i !== index));
+    const updateEquipment = (index: number, field: string, value: string | number) => {
+        const newEquipments = [...equipments];
+        newEquipments[index] = { ...newEquipments[index], [field]: value };
+        setEquipments(newEquipments);
+    };
+
+    const addLabor = () => setLabors([...labors, { laborId: '', description: '', dailyWage: '', dotation: '' }]);
+    const removeLabor = (index: number) => setLabors(labors.filter((_, i) => i !== index));
+    const updateLabor = (index: number, field: string, value: string | number) => {
+        const newLabors = [...labors];
+        newLabors[index] = { ...newLabors[index], [field]: value };
+        setLabors(newLabors);
+    };
+
+    return (
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-5xl mx-auto border border-base-200">
+            <h1 className="text-2xl font-bold mb-6">Crear Nuevo APU</h1>
+
+            {/* --- SECCIÓN 1: DATOS GENERALES --- */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 border-b pb-8">
+                {/* Fila 1 */}
+                <div className="form-control md:col-span-1">
+                    <label className="label"><span className="label-text font-bold">Solicitud (ID)*</span></label>
+                    <input type="text" name="serviceRequest" value={header.serviceRequest} onChange={handleInputChange} className="input input-bordered w-full" placeholder="Ej: SR-2026-001" required />
+                </div>
+
+                <div className="form-control md:col-span-3">
+                    <label className="label"><span className="label-text font-bold">Proceso Principal*</span></label>
+                    <input type="text" name="mainProcess" value={header.mainProcess} onChange={handleInputChange} className="input input-bordered w-full" placeholder="Ej: Rebobinado Motor" required />
+                </div>
+
+                {/* Fila 2: Empresa dividida 25% / 75% */}
+                <div className="form-control md:col-span-1">
+                    <label className="label"><span className="label-text font-bold">Empresa (ID)*</span></label>
+                    <input type="text" name="companyId" value={header.companyId} onChange={handleInputChange} className="input input-bordered w-full" placeholder="Ej: EMP-01" required />
+                </div>
+
+                <div className="form-control md:col-span-3">
+                    <label className="label"><span className="label-text font-bold">Nombre de la Empresa (Búsqueda)</span></label>
+                    <input type="text" name="companyName" value={header.companyName} onChange={handleInputChange} className="input input-bordered w-full" placeholder="Escribe para buscar la empresa..." />
+                </div>
+
+                {/* Fila 3: Descripción ocupa todo el ancho */}
+                <div className="form-control md:col-span-4">
+                    <label className="label"><span className="label-text font-bold">Descripción del Servicio*</span></label>
+                    <input type="text" name="description" value={header.description} onChange={handleInputChange} className="input input-bordered w-full" required />
+                </div>
+            </div>
+
+            {/* --- SECCIÓN 2: ESPECIFICACIONES --- */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 border-b pb-8">
+                <div className="form-control">
+                    <label className="label"><span className="label-text">Potencia</span></label>
+                    <input type="text" name="power" value={header.power} onChange={handleInputChange} className="input input-bordered input-sm" />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text">Serial</span></label>
+                    <input type="text" name="serial" value={header.serial} onChange={handleInputChange} className="input input-bordered input-sm" />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text">Marca</span></label>
+                    <input type="text" name="brand" value={header.brand} onChange={handleInputChange} className="input input-bordered input-sm" />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text">Ubicación</span></label>
+                    <input type="text" name="location" value={header.location} onChange={handleInputChange} className="input input-bordered input-sm" />
+                </div>
+            </div>
+
+            {/* --- SECCIÓN 3: VARIABLES DE CÁLCULO --- */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                <div className="form-control">
+                    <label className="label"><span className="label-text font-bold">Cantidad</span></label>
+                    <input type="number" name="itemQuantity" value={header.itemQuantity} onChange={handleInputChange} className="input input-bordered" step="0.01" />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text font-bold text-primary">Rendimiento*</span></label>
+                    <input type="number" name="performance" value={header.performance} onChange={handleInputChange} className="input input-bordered border-primary" step="0.01" required />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text">% Leyes Soc.</span></label>
+                    <input type="number" name="socialLawsPercentage" value={header.socialLawsPercentage} onChange={handleInputChange} className="input input-bordered" step="0.01" />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text">% Admin.</span></label>
+                    <input type="number" name="adminPercentage" value={header.adminPercentage} onChange={handleInputChange} className="input input-bordered" step="0.01" />
+                </div>
+                <div className="form-control">
+                    <label className="label"><span className="label-text">% Utilidad</span></label>
+                    <input type="number" name="utilityContingencyPercentage" value={header.utilityContingencyPercentage} onChange={handleInputChange} className="input input-bordered" step="0.01" />
+                </div>
+            </div>
+
+            {/* --- SECCIÓN 4: LISTAS DE DETALLES --- */}
+            <div className="flex flex-col gap-6 mb-8 overflow-x-auto">
+
+                {/* MATERIALES */}
+                <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
+                    <h3 className="text-lg text-base-content font-medium mb-4 flex items-center gap-2">
+                        <span>🔧</span> Materiales
+                    </h3>
+                    <div className="grid grid-cols-[100px_minmax(150px,1fr)_80px_100px_100px_32px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
+                        <div>ID</div><div>Descripción</div><div>Unidad</div><div>Precio</div><div>Cantidad</div><div></div>
+                    </div>
+                    {materials.map((mat, index) => (
+                        <div key={`mat-${index}`} className="grid grid-cols-[100px_minmax(150px,1fr)_80px_100px_100px_32px] gap-3 mb-2 items-center">
+                            <input type="text" className="input input-sm input-bordered w-full" value={mat.materialId} onChange={(e) => updateMaterial(index, 'materialId', e.target.value)} />
+                            <input type="text" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={mat.description} disabled placeholder="Auto" />
+                            <input type="text" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={mat.unit} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={mat.price} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full" value={mat.quantity} onChange={(e) => updateMaterial(index, 'quantity', parseFloat(e.target.value))} />
+                            <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeMaterial(index)}>-</button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addMaterial} className="btn btn-sm btn-block btn-outline border-dashed text-base-content/60 hover:text-primary mt-2">
+                        + Agregar Material
+                    </button>
+                </div>
+
+                {/* EQUIPOS */}
+                <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
+                    <h3 className="text-lg text-base-content font-medium mb-4 flex items-center gap-2">
+                        <span>⚙️</span> Equipos
+                    </h3>
+                    <div className="grid grid-cols-[100px_minmax(150px,1fr)_100px_120px_100px_32px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
+                        <div>ID</div><div>Descripción</div><div>Precio Inicial</div><div>Factor de Deprec.</div><div>Cantidad</div><div></div>
+                    </div>
+                    {equipments.map((eq, index) => (
+                        <div key={`eq-${index}`} className="grid grid-cols-[100px_minmax(150px,1fr)_100px_120px_100px_32px] gap-3 mb-2 items-center">
+                            <input type="text" className="input input-sm input-bordered w-full" value={eq.equipmentId} onChange={(e) => updateEquipment(index, 'equipmentId', e.target.value)} />
+                            <input type="text" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={eq.description} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={eq.baseValue} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={eq.depreciation} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full" value={eq.quantity} onChange={(e) => updateEquipment(index, 'quantity', parseFloat(e.target.value))} />
+                            <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeEquipment(index)}>-</button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addEquipment} className="btn btn-sm btn-block btn-outline border-dashed text-base-content/60 hover:text-primary mt-2">
+                        + Agregar Equipo
+                    </button>
+                </div>
+
+                {/* MANO DE OBRA */}
+                <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
+                    <h3 className="text-lg text-base-content font-medium mb-4 flex items-center gap-2">
+                        <span>👷</span> Mano de Obra (Cargos)
+                    </h3>
+                    <div className="grid grid-cols-[100px_minmax(150px,1fr)_120px_120px_32px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
+                        <div>ID</div><div>Descripción</div><div>Salario diario</div><div>Dotación</div><div></div>
+                    </div>
+                    {labors.map((lab, index) => (
+                        <div key={`lab-${index}`} className="grid grid-cols-[100px_minmax(150px,1fr)_120px_120px_32px] gap-3 mb-2 items-center">
+                            <input type="text" className="input input-sm input-bordered w-full" value={lab.laborId} onChange={(e) => updateLabor(index, 'laborId', e.target.value)} />
+                            <input type="text" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={lab.description} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full bg-base-200 text-base-content/60" value={lab.dailyWage} disabled placeholder="Auto" />
+                            <input type="number" className="input input-sm input-bordered w-full" value={lab.dotation} onChange={(e) => updateLabor(index, 'dotation', parseFloat(e.target.value))} />
+                            <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeLabor(index)}>-</button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addLabor} className="btn btn-sm btn-block btn-outline border-dashed text-base-content/60 hover:text-primary mt-2">
+                        + Agregar Mano de Obra
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8 border-t pt-6">
+                <button type="button" onClick={() => navigate('/')} className="btn btn-ghost">Cancelar</button>
+                <button type="button" className="btn btn-primary" onClick={() => console.log({ ...header, materials, equipments, labors })}>Generar APU</button>
+            </div>
+        </div>
+    );
+}
+==> frontend/src/App.tsx <==
+import { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
+import ApuList from './pages/ApuList';
+import ApuForm from './pages/ApuForm';
+import MaterialManager from './pages/MaterialManager';
+import CompanyManager from './pages/CompanyManager';
+import EquipmentManager from './pages/EquipmentManager';
+import LaborManager from './pages/LaborManager';
+
+function App() {
+    const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+    const dropdownRef = useRef<HTMLLIElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsCatalogOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="min-h-screen bg-base-200">
+            {/* NAVBAR SUPERIOR */}
+            <div className="navbar bg-base-100 shadow-sm px-6">
+                <div className="flex-1">
+                    <Link to="/" className="btn btn-ghost text-xl font-bold">APU Gen</Link>
+                </div>
+                <div className="flex-none">
+                    <ul className="menu menu-horizontal px-1 font-semibold gap-2 items-center">
+                        <li><Link to="/" onClick={() => setIsCatalogOpen(false)}>APUs</Link></li>
+
+                        {/* MENÚ DESPLEGABLE DE CATÁLOGOS COMPLETO */}
+                        <li className="relative" ref={dropdownRef}>
+                            <details open={isCatalogOpen} className="dropdown">
+                                <summary
+                                    className="cursor-pointer"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setIsCatalogOpen(!isCatalogOpen);
+                                    }}
+                                >
+                                    Catálogos
+                                </summary>
+                                <ul className="p-2 bg-base-100 rounded-box shadow-xl border border-base-200 z-50 w-48 absolute right-0 mt-2">
+                                    <li><Link to="/catalogos/empresas" onClick={() => setIsCatalogOpen(false)}>Empresas</Link></li>
+                                    <li><Link to="/catalogos/materiales" onClick={() => setIsCatalogOpen(false)}>Materiales</Link></li>
+                                    <li><Link to="/catalogos/equipos" onClick={() => setIsCatalogOpen(false)}>Equipos</Link></li>
+                                    <li><Link to="/catalogos/cargos" onClick={() => setIsCatalogOpen(false)}>Mano de Obra</Link></li>
+                                </ul>
+                            </details>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            {/* RUTAS DEL SISTEMA */}
+            <main className="max-w-7xl mx-auto py-8 px-4">
+                <Routes>
+                    <Route path="/" element={<ApuList />} />
+                    <Route path="/apus/nuevo" element={<ApuForm />} />
+                    <Route path="/catalogos/empresas" element={<CompanyManager />} />
+                    <Route path="/catalogos/materiales" element={<MaterialManager />} />
+                    <Route path="/catalogos/equipos" element={<EquipmentManager />} />
+                    <Route path="/catalogos/cargos" element={<LaborManager />} />
+                </Routes>
+            </main>
+        </div>
+    );
+}
+
+export default App;
+==> backend/src/main/java/com/embobinados/apugen_backend/utilz/StringUtilz.java <==
+package com.embobinados.apugen_backend.utilz;
+
+public class StringUtilz {
+    public static String limpiarParametro(String valor) {
+        // Si es nulo o solo contiene espacios en blanco, retorna null.
+        // De lo contrario, retorna el texto sin espacios accidentales a los lados.
+        return (valor != null && !valor.isBlank()) ? valor.trim() : null;
+    }
+
+    public static String prepararFiltro(String valor, boolean exactMatch) {
+        if (valor == null || valor.isBlank()) return null;
+        String limpio = valor.trim();
+        return exactMatch ? limpio : "%" + limpio + "%";
+    }
+}
+
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/Labor.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "labors")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Labor {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String description; // Ej: "Técnico Embobinador Principal"
+
+    @Column(name = "base_daily_wage", precision = 12, scale = 2, nullable = false)
+    private BigDecimal baseDailyWage;
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/ProcessEquipment.java <==
+package com.embobinados.apugen_backend.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "process_equipments")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessEquipment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "process_service_request", nullable = false)
+    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
+    private Process process;
+
+    // Referencia al catálogo maestro
+    @ManyToOne
+    @JoinColumn(name = "equipment_id", nullable = false)
+    private Equipment equipment;
+
+    // Fotografía (Snapshot)
+    @Column(nullable = false, length = 255)
+    private String descriptionSnapshot;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal valueApplied;
+
+    @Column(name = "depreciation_factor_applied", precision = 12, scale = 5, nullable = false)
+    private BigDecimal depreciationFactorApplied;
+
+    // Variables del proceso
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal quantity;
+
+    @Column(name = "daily_use_cost", precision = 12, scale = 2, nullable = false)
+    private BigDecimal dailyUseCost; // valueApplied * depreciationFactorApplied
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/Equipment.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "equipments")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Equipment {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String description;
+
+    @Column(name = "base_value", precision = 12, scale = 2, nullable = false)
+    private BigDecimal baseValue;
+
+    // Precisión de 5 decimales solicitada
+    @Column(name = "depreciation_factor", precision = 12, scale = 5, nullable = false)
+    private BigDecimal depreciationFactor;
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/Process.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+import java.util.List;
+
+@Entity
+@Table(name = "processes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Process {
+    @Id
+    @Column(name = "service_request", length = 20)
+    private String serviceRequest; // ID Manual (Solicitud de Servicio)
+
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
+    @Column(name = "main_process", nullable = false, length = 100)
+    private String mainProcess;
+
+    @Column(nullable = false, length = 100)
+    private String description;
+
+    @Column(length = 50)
+    private String power;
+
+    @Column(length = 100)
+    private String serial;
+
+    @Column(length = 100)
+    private String brand;
+
+    @Column(length = 100)
+    private String location;
+
+    // --- VARIABLES DEL APU (Atributos del Proceso) ---
+    @Column(name = "item_quantity", precision = 12, scale = 2)
+    private BigDecimal itemQuantity; // Cantidad de veces que se realizará el item
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal performance; // Rendimiento del item
+
+    @Column(name = "social_laws_percentage", precision = 5, scale = 2)
+    private BigDecimal socialLawsPercentage; // Porcentaje Leyes Sociales (Ej: 0.75 para 75%)
+
+    @Column(name = "admin_percentage", precision = 5, scale = 2)
+    private BigDecimal adminPercentage; // Porcentaje Administración
+
+    @Column(name = "utility_contingency_percentage", precision = 5, scale = 2)
+    private BigDecimal utilityContingencyPercentage; // Porcentaje Utilidad e Imprevistos
+
+    // --- TOTALES CALCULADOS (Se guardan para congelar el presupuesto) ---
+    @Column(name = "material_unit_cost", precision = 12, scale = 2)
+    private BigDecimal materialUnitCost; // Costo Unitario de Materiales
+
+    @Column(name = "equipment_unit_cost", precision = 12, scale = 2)
+    private BigDecimal equipmentUnitCost; // Costo Unitario de Equipos
+
+    @Column(name = "labor_unit_cost", precision = 12, scale = 2)
+    private BigDecimal laborUnitCost; // Costo Unitario de Mano de Obra
+
+    @Column(name = "direct_unit_cost", precision = 14, scale = 2)
+    private BigDecimal directUnitCost; // Sumatoria de los 3 anteriores
+
+    @Column(name = "admin_cost_value", precision = 14, scale = 2)
+    private BigDecimal adminCostValue; // directUnitCost * adminPercentage
+
+    @Column(name = "total_unit_cost", precision = 14, scale = 2)
+    private BigDecimal totalUnitCost; // directUnitCost + adminCostValue
+
+    @Column(name = "utility_cost_value", precision = 14, scale = 2)
+    private BigDecimal utilityCostValue; // totalUnitCost * utilityContingencyPercentage
+
+    @Column(name = "calculated_unit_price", precision = 14, scale = 2)
+    private BigDecimal calculatedUnitPrice; // totalUnitCost + utilityCostValue
+
+    // El precio propuesto debe ser entero según la regla
+    @Column(name = "proposed_unit_price")
+    private Integer proposedUnitPrice;
+
+    // --- RELACIONES EN CASCADA (Solución al TransientPropertyValueException) ---
+    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProcessMaterial> materials;
+
+    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProcessEquipment> equipments;
+
+    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProcessLabor> labors;
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/ProcessMaterial.java <==
+package com.embobinados.apugen_backend.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "process_materials")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessMaterial {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "process_service_request", nullable = false)
+    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
+    private Process process;
+
+    // Referencia al catálogo maestro
+    @ManyToOne
+    @JoinColumn(name = "material_id", nullable = false)
+    private Material material;
+
+    // Fotografía (Snapshot) de los datos al momento de crear el APU
+    @Column(nullable = false, length = 255)
+    private String descriptionSnapshot;
+
+    @Column(length = 20)
+    private String unitSnapshot;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal costApplied; // El costo que se usó (puede ser el base o uno modificado por el cliente)
+
+    // Variables del proceso
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal quantity;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal amount; // quantity * costApplied
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/Company.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "companies")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Company {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String name;
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/ProcessLabor.java <==
+package com.embobinados.apugen_backend.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "process_labors")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessLabor {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "process_service_request", nullable = false)
+    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
+    private Process process;
+
+    // Referencia al catálogo maestro
+    @ManyToOne
+    @JoinColumn(name = "labor_id", nullable = false)
+    private Labor labor;
+
+    // Fotografía (Snapshot)
+    @Column(nullable = false, length = 255)
+    private String descriptionSnapshot;
+
+    @Column(name = "daily_wage_applied", precision = 12, scale = 2, nullable = false)
+    private BigDecimal dailyWageApplied;
+
+    // Variables del proceso
+    @Column(precision = 5, scale = 2, nullable = false)
+    private BigDecimal dotation; // Porcentaje (Ej: 1.00 para 100%)
+
+    @Column(name = "daily_cost", precision = 12, scale = 2, nullable = false)
+    private BigDecimal dailyCost; // dailyWageApplied * dotation
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/entity/Material.java <==
+package com.embobinados.apugen_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "materials")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Material {
+    @Id
+    private String id; // ID Manual
+
+    @Column(nullable = false, length = 255)
+    private String description;
+
+    @Column(length = 20)
+    private String unit;
+
+    @Column(name = "base_cost", precision = 12, scale = 2, nullable = false)
+    private BigDecimal baseCost;
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/ApugenBackendApplication.java <==
+package com.embobinados.apugen_backend;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ApugenBackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ApugenBackendApplication.class, args);
+	}
+
+}
+
+==> backend/src/main/java/com/embobinados/apugen_backend/dto/ApuRequestDTO.java <==
+package com.embobinados.apugen_backend.dto;
+
+import lombok.Data;
+import java.math.BigDecimal;
+import java.util.List;
+
+@Data
+public class ApuRequestDTO {
+    // Cabecera
+    private String serviceRequest;
+    private String companyId;
+    private String mainProcess;
+    private String description;
+    private String power;
+    private String serial;
+    private String brand;
+    private String location;
+
+    // Variables del proceso
+    private BigDecimal itemQuantity;
+    private BigDecimal performance;
+    private BigDecimal socialLawsPercentage;
+    private BigDecimal adminPercentage;
+    private BigDecimal utilityContingencyPercentage;
+
+    // Listas de detalles
+    private List<MaterialDTO> materials;
+    private List<EquipmentDTO> equipments;
+    private List<LaborDTO> labors;
+
+    // Clases anidadas para estructurar las listas del JSON
+    @Data
+    public static class MaterialDTO {
+        private String materialId;
+        private BigDecimal quantity;
+    }
+
+    @Data
+    public static class EquipmentDTO {
+        private String equipmentId;
+        private BigDecimal quantity;
+    }
+
+    @Data
+    public static class LaborDTO {
+        private String laborId;
+        private BigDecimal dotation;
+    }
+}
+
+==> backend/src/main/java/com/embobinados/apugen_backend/dto/ApuResponseDTO.java <==
+package com.embobinados.apugen_backend.dto;
+
+import com.embobinados.apugen_backend.entity.Process;
+import com.embobinados.apugen_backend.entity.ProcessEquipment;
+import com.embobinados.apugen_backend.entity.ProcessLabor;
+import com.embobinados.apugen_backend.entity.ProcessMaterial;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+public class ApuResponseDTO {
+    private Process process;
+    private List<ProcessMaterial> materials;
+    private List<ProcessEquipment> equipments;
+    private List<ProcessLabor> labors;
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/exception/GlobalExceptionHandler.java <==
+package com.embobinados.apugen_backend.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Usamos un 'record' de Java 21 para definir la estructura del JSON de error
+    public record ErrorResponse(
+            LocalDateTime timestamp,
+            int status,
+            String error,
+            String message
+    ) {}
+
+    // Intercepta las RuntimeException (las que lanzamos en el ApuService)
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Error en la Petición",
+                ex.getMessage() // Aquí inyectará "Material no encontrado", etc.
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/controllers/CatalogController.java <==
+package com.embobinados.apugen_backend.controllers;
+
+import com.embobinados.apugen_backend.entity.Company;
+import com.embobinados.apugen_backend.entity.Equipment;
+import com.embobinados.apugen_backend.entity.Labor;
+import com.embobinados.apugen_backend.entity.Material;
+import com.embobinados.apugen_backend.repository.CompanyRepository;
+import com.embobinados.apugen_backend.repository.EquipmentRepository;
+import com.embobinados.apugen_backend.repository.LaborRepository;
+import com.embobinados.apugen_backend.repository.MaterialRepository;
+import com.embobinados.apugen_backend.utilz.StringUtilz;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/catalogos")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*") // Previene bloqueos CORS desde React
+public class CatalogController {
+
+    // Inyección de dependencias de los repositorios maestros
+    private final CompanyRepository companyRepository;
+    private final MaterialRepository materialRepository;
+    private final EquipmentRepository equipmentRepository;
+    private final LaborRepository laborRepository;
+
+
+
+    @GetMapping("/empresas")
+    public ResponseEntity<List<Company>> getCompanies() {
+        // findAll() ejecuta un "SELECT * FROM companies" automáticamente
+        return ResponseEntity.ok(companyRepository.findAll());
+    }
+
+    // @GetMapping("/empresas/{id}")
+    @GetMapping("/empresas/porId")
+    public ResponseEntity<Company> getEmpresa(
+            @RequestParam("id") String id
+    ) {
+        Company empresa = companyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró la empresa con ID: " + id));
+
+        return ResponseEntity.ok(empresa);
+    }
+
+    @GetMapping("/empresas/porNombre")
+    public ResponseEntity<List<Company>> getEmpresasPorNombre(
+            @RequestParam("nombre") String nombre
+    ) {
+        String palabraBusqueda = StringUtilz.prepararFiltro(nombre, false);
+
+        if (palabraBusqueda == null) {
+            return ResponseEntity.ok(companyRepository.findAll());
+        }
+
+        return ResponseEntity.ok(companyRepository.buscarPorNombre(palabraBusqueda));
+    }
+
+    @PostMapping("/empresas")
+    public ResponseEntity<Company> crearEmpresa(@RequestBody Company empresa) {
+        // Validación crucial por usar IDs manuales
+        if (empresa.getId() == null) {
+            throw new RuntimeException("El ID de la empresa es obligatorio.");
+        }
+        if (companyRepository.existsById(empresa.getId())) {
+            throw new RuntimeException("Ya existe una empresa registrada con el ID: " + empresa.getId());
+        }
+        return ResponseEntity.ok(companyRepository.save(empresa));
+    }
+
+    // @PutMapping("/empresas/{id}")
+    @PutMapping("/empresas")
+    public ResponseEntity<Company> actualizarEmpresa(
+            @RequestParam("id") String id,
+            @RequestBody Company detalles)
+    {
+        Company empresa = companyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró la empresa con ID: " + id));
+
+        empresa.setName(detalles.getName());
+
+        return ResponseEntity.ok(companyRepository.save(empresa));
+    }
+
+    // @DeleteMapping("/empresas/{id}")
+    @DeleteMapping("/empresas")
+    public ResponseEntity<Void> borrarEmpresa(
+            @RequestParam("id") String id
+    ) {
+        if (!companyRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró la empresa con ID: " + id);
+        }
+        try {
+            companyRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("No se puede borrar la empresa porque está siendo usada en un APU.");
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==========================================
+    // CRUD PARA MATERIALES
+    // ==========================================
+
+    @GetMapping("/materiales")
+    public ResponseEntity<List<Material>> getMaterials() {
+        return ResponseEntity.ok(materialRepository.findAll());
+    }
+
+    // @GetMapping("/materiales/{id}")
+    @GetMapping("/materiales/porId")
+    public ResponseEntity<Material> getMaterial(
+            @RequestParam("id") String id
+    ) {
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró el material con ID: " + id));
+
+        return ResponseEntity.ok(material);
+    }
+
+    @GetMapping("/materiales/porDescripcion")
+    public ResponseEntity<List<Material>> buscarMaterialesPorDescripcion(
+            @RequestParam("descripcion") String descripcion
+    ) {
+        String filtro = StringUtilz.prepararFiltro(descripcion, false);
+        if (filtro == null) {
+            return ResponseEntity.ok(materialRepository.findAll());
+        }
+        return ResponseEntity.ok(materialRepository.buscarPorDescripcion(filtro));
+    }
+
+    @PostMapping("/materiales")
+    public ResponseEntity<Material> crearMaterial(@RequestBody Material material) {
+        // Validación crucial por usar IDs manuales
+        if (material.getId() == null) {
+            throw new RuntimeException("El ID del material es obligatorio.");
+        }
+        if (materialRepository.existsById(material.getId())) {
+            throw new RuntimeException("Ya existe un material registrado con el ID: " + material.getId());
+        }
+        return ResponseEntity.ok(materialRepository.save(material));
+    }
+
+    // @PutMapping("/materiales/{id}")
+    @PutMapping("/materiales")
+    public ResponseEntity<Material> actualizarMaterial(
+            @RequestParam("id") String id,
+            @RequestBody Material detalles
+    ) {
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró el material con ID: " + id));
+
+        material.setDescription(detalles.getDescription());
+        material.setUnit(detalles.getUnit());
+        material.setBaseCost(detalles.getBaseCost());
+
+        return ResponseEntity.ok(materialRepository.save(material));
+    }
+
+    // @DeleteMapping("/materiales/{id}")
+    @DeleteMapping("/materiales")
+    public ResponseEntity<Void> borrarMaterial(
+            @RequestParam("id") String id
+    ) {
+        if (!materialRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró el material con ID: " + id);
+        }
+        try {
+            materialRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("No se puede borrar el material porque está siendo usado en un APU.");
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==========================================
+    // CRUD PARA EQUIPOS
+    // ==========================================
+
+    @GetMapping("/equipos")
+    public ResponseEntity<List<Equipment>> getEquipments() {
+        return ResponseEntity.ok(equipmentRepository.findAll());
+    }
+
+    // @GetMapping("/equipos/{id}")
+    @GetMapping("/equipos/porId")
+    public ResponseEntity<Equipment> getEquipo(
+            @RequestParam("id") String id
+    ) {
+        Equipment equipo = equipmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró el equipo con ID: " + id));
+
+        return ResponseEntity.ok(equipo);
+    }
+
+    @GetMapping("/equipos/porDescripcion")
+    public ResponseEntity<List<Equipment>> buscarEquiposPorDescripcion(
+            @RequestParam("descripcion") String descripcion
+    ) {
+        String filtro = StringUtilz.prepararFiltro(descripcion, false);
+        if (filtro == null) {
+            return ResponseEntity.ok(equipmentRepository.findAll());
+        }
+        return ResponseEntity.ok(equipmentRepository.buscarPorDescripcion(filtro));
+    }
+
+    @PostMapping("/equipos")
+    public ResponseEntity<Equipment> crearEquipo(@RequestBody Equipment equipo) {
+        // Validación crucial por usar IDs manuales
+        if (equipo.getId() == null) {
+            throw new RuntimeException("El ID del equipo es obligatorio.");
+        }
+        if (equipmentRepository.existsById(equipo.getId())) {
+            throw new RuntimeException("Ya existe un equipo registrado con el ID: " + equipo.getId());
+        }
+        return ResponseEntity.ok(equipmentRepository.save(equipo));
+    }
+
+    // @PutMapping("/equipos/{id}")
+    public ResponseEntity<Equipment> actualizarEquipo(
+            @RequestParam("id") String id,
+            @RequestBody Equipment detalles
+    ) {
+        Equipment equipo = equipmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró el equipo con ID: " + id));
+
+        equipo.setDescription(detalles.getDescription());
+        equipo.setBaseValue(detalles.getBaseValue());
+        equipo.setDepreciationFactor(detalles.getDepreciationFactor());
+
+        return ResponseEntity.ok(equipmentRepository.save(equipo));
+    }
+
+    // @DeleteMapping("/equipos/{id}")
+    @DeleteMapping("/equipos")
+    public ResponseEntity<Void> borrarEquipo(
+            @RequestParam("id") String id
+    ) {
+        if (!equipmentRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró el equipo con ID: " + id);
+        }
+        try {
+            equipmentRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("No se puede borrar el equipo porque está siendo usado en un APU.");
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==========================================
+    // CRUD PARA MANO DE OBRA (CARGOS)
+    // ==========================================
+
+    @GetMapping("/cargos")
+    public ResponseEntity<List<Labor>> getLabors() {
+        return ResponseEntity.ok(laborRepository.findAll());
+    }
+
+    // @GetMapping("/cargos/{id}")
+    @GetMapping("/cargos/porId")
+    public ResponseEntity<Labor> getCargo(
+            @RequestParam("id") String id
+    ) {
+        Labor cargo = laborRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró el cargo con ID: " + id));
+
+        return ResponseEntity.ok(cargo);
+    }
+
+    @PostMapping("/cargos")
+    public ResponseEntity<Labor> crearCargo(@RequestBody Labor cargo) {
+        // Validación crucial por usar IDs manuales
+        if (cargo.getId() == null) {
+            throw new RuntimeException("El ID del cargo es obligatorio.");
+        }
+        if (laborRepository.existsById(cargo.getId())) {
+            throw new RuntimeException("Ya existe un cargo registrado con el ID: " + cargo.getId());
+        }
+        return ResponseEntity.ok(laborRepository.save(cargo));
+    }
+
+    // @PutMapping("/cargos/{id}")
+    @PutMapping("/cargos")
+    public ResponseEntity<Labor> actualizarCargo(
+            @RequestParam("id") String id,
+            @RequestBody Labor detalles
+    ) {
+        Labor cargo = laborRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró el equipo con ID: " + id));
+
+        cargo.setDescription(detalles.getDescription());
+        cargo.setBaseDailyWage(detalles.getBaseDailyWage());
+
+        return ResponseEntity.ok(laborRepository.save(cargo));
+    }
+
+    // @DeleteMapping("/cargos/{id}")
+    @DeleteMapping("/cargos")
+    public ResponseEntity<Void> borrarCargo(
+            @RequestParam("id") String id
+    ) {
+        if (!laborRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró el cargo con ID: " + id);
+        }
+        try {
+            laborRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("No se puede borrar el cargo porque está siendo usado en un APU.");
+        }
+        return ResponseEntity.noContent().build();
+    }
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/controllers/ApuController.java <==
+package com.embobinados.apugen_backend.controllers;
+
+import com.embobinados.apugen_backend.dto.ApuRequestDTO;
+import com.embobinados.apugen_backend.dto.ApuResponseDTO;
+import com.embobinados.apugen_backend.entity.*;
+import com.embobinados.apugen_backend.entity.Process;
+import com.embobinados.apugen_backend.service.ApuService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/apus")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*") // Permite que el frontend en React (puerto 5173) se comunique sin bloqueos CORS
+public class ApuController {
+
+    private final ApuService apuService;
+
+    @PostMapping("/generar")
+    public ResponseEntity<Process> generarApu(@RequestBody ApuRequestDTO dto) {
+
+        // 1. Mapear la cabecera (Process)
+        Process process = new Process();
+        process.setServiceRequest(dto.getServiceRequest());
+        process.setMainProcess(dto.getMainProcess());
+        process.setDescription(dto.getDescription());
+        process.setPower(dto.getPower());
+        process.setSerial(dto.getSerial());
+        process.setBrand(dto.getBrand());
+        process.setLocation(dto.getLocation());
+        process.setItemQuantity(dto.getItemQuantity());
+        process.setPerformance(dto.getPerformance());
+        process.setSocialLawsPercentage(dto.getSocialLawsPercentage());
+        process.setAdminPercentage(dto.getAdminPercentage());
+        process.setUtilityContingencyPercentage(dto.getUtilityContingencyPercentage());
+
+        // Truco JPA: Para guardar relaciones, solo necesitamos instanciar la entidad con su ID
+        Company company = new Company();
+        company.setId(dto.getCompanyId());
+        process.setCompany(company);
+
+        // 2. Mapear la lista de Materiales
+        List<ProcessMaterial> materials = dto.getMaterials().stream().map(mDto -> {
+            ProcessMaterial pm = new ProcessMaterial();
+            Material material = new Material();
+            material.setId(mDto.getMaterialId());
+            pm.setMaterial(material);
+            pm.setQuantity(mDto.getQuantity());
+            return pm;
+        }).collect(Collectors.toList());
+
+        // 3. Mapear la lista de Equipos
+        List<ProcessEquipment> equipments = dto.getEquipments().stream().map(eDto -> {
+            ProcessEquipment pe = new ProcessEquipment();
+            Equipment equipment = new Equipment();
+            equipment.setId(eDto.getEquipmentId());
+            pe.setEquipment(equipment);
+            pe.setQuantity(eDto.getQuantity());
+            return pe;
+        }).collect(Collectors.toList());
+
+        // 4. Mapear la lista de Mano de Obra
+        List<ProcessLabor> labors = dto.getLabors().stream().map(lDto -> {
+            ProcessLabor pl = new ProcessLabor();
+            Labor labor = new Labor();
+            labor.setId(lDto.getLaborId());
+            pl.setLabor(labor);
+            pl.setDotation(lDto.getDotation());
+            return pl;
+        }).collect(Collectors.toList());
+
+        // 5. Ejecutar el cálculo y guardar
+        Process savedProcess = apuService.calcAndSaveApu(process, materials, equipments, labors);
+
+        // Devolvemos el APU calculado y guardado con un código HTTP 200 (OK)
+        return ResponseEntity.ok(savedProcess);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Process>> listarTodosLosApus() {
+        List<Process> apus = apuService.getAllApus();
+        return ResponseEntity.ok(apus);
+    }
+
+    @GetMapping("/porOrden")
+    public ResponseEntity<ApuResponseDTO> buscarApuPorOrdenServicio(
+            @RequestParam("serviceRequest") String serviceRequest
+    ) {
+        ApuResponseDTO apu = apuService.getApuByServiceRequest(serviceRequest);
+        return ResponseEntity.ok(apu);
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Process>> buscarApus(
+            @RequestParam(required = false) String companyId,
+            @RequestParam(required = false) String companyName,
+            @RequestParam(required = false) String mainProcess,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String power,
+            @RequestParam(required = false) String serial,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String location,
+            @RequestParam(defaultValue = "false") boolean exactMatch) {
+
+        List<Process> resultados = apuService.searchApus(
+                companyId, companyName, mainProcess, description, power, serial, brand, location, exactMatch);
+
+        return ResponseEntity.ok(resultados);
+    }
+
+    // @DeleteMapping("/{serviceRequest}")
+    @DeleteMapping
+    public ResponseEntity<Void> eliminarApu(
+            @RequestParam("serviceRequest") String serviceRequest
+    ) {
+        apuService.deleteApu(serviceRequest);
+        return ResponseEntity.noContent().build();
+    }
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/service/ApuService.java <==
+package com.embobinados.apugen_backend.service;
+
+import com.embobinados.apugen_backend.dto.ApuResponseDTO;
+import com.embobinados.apugen_backend.entity.*;
+import com.embobinados.apugen_backend.entity.Process;
+import com.embobinados.apugen_backend.repository.*;
+import com.embobinados.apugen_backend.utilz.StringUtilz;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ApuService {
+    private final ProcessRepository processRepository;
+    private final MaterialRepository materialRepository;
+    private final EquipmentRepository equipmentRepository;
+    private final LaborRepository laborRepository;
+    private final ProcessMaterialRepository processMaterialRepository;
+    private final ProcessEquipmentRepository processEquipmentRepository;
+    private final ProcessLaborRepository processLaborRepository;
+
+    @Transactional
+    public Process calcAndSaveApu(
+            Process process,
+            List<ProcessMaterial> materials,
+            List<ProcessEquipment> equipments,
+            List<ProcessLabor> labors
+    ) {
+        if (process.getPerformance() == null || process.getPerformance().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("El rendimiento del APU debe ser mayor a cero para poder calcular los costos.");
+        }
+
+        // CALCULO DE MATERIALES
+        BigDecimal totalMateriales = BigDecimal.ZERO;
+        for (ProcessMaterial pm : materials) {
+            // Ir al catalogo, extraer datos y hacer el snapshot
+            Material catMat = materialRepository.findById(pm.getMaterial().getId())
+                    .orElseThrow(() -> new RuntimeException("Material no encontrado"));
+
+            pm.setDescriptionSnapshot(catMat.getDescription());
+            pm.setUnitSnapshot(catMat.getUnit());
+            pm.setCostApplied(catMat.getBaseCost());
+
+            // monto = costo * cantidad
+            BigDecimal amount = pm.getCostApplied().multiply(pm.getQuantity()).setScale(2, RoundingMode.HALF_UP);
+            pm.setAmount(amount);
+            pm.setProcess(process);
+
+            totalMateriales = totalMateriales.add(amount);
+        }
+
+        //costo_unitario_materiales = total_materiales * cantidad_item
+        BigDecimal materialUnitCost = totalMateriales.multiply(process.getItemQuantity()).setScale(2, RoundingMode.HALF_UP);
+        process.setMaterialUnitCost(materialUnitCost);
+
+        // CALCULO DE EQUIPOS
+
+        BigDecimal totalEquipos = BigDecimal.ZERO;
+        for (ProcessEquipment pe : equipments) {
+            // Ir al inventario, extraer datos y hacer el snapshot
+            Equipment catEq = equipmentRepository.findById(pe.getEquipment().getId())
+                    .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+
+            pe.setDescriptionSnapshot(catEq.getDescription());
+            pe.setValueApplied(catEq.getBaseValue());
+            pe.setDepreciationFactorApplied(catEq.getDepreciationFactor()); // Se mantiene con 5 decimales
+
+            // costo_uso_diario = valor * factor_depreciacion
+            BigDecimal dailyUseCost = pe.getValueApplied().multiply(pe.getDepreciationFactorApplied().setScale(6, RoundingMode.HALF_UP));
+            pe.setDailyUseCost(dailyUseCost);
+            pe.setProcess(process);
+
+            totalEquipos = totalEquipos.add(dailyUseCost);
+        }
+
+        // costo_unitario_equipos = total_equipos / rendimiento
+        BigDecimal equipmentUnitCost = totalEquipos.divide(process.getPerformance(), 2, RoundingMode.HALF_UP);
+        process.setEquipmentUnitCost(equipmentUnitCost);
+
+        // CALCULO DE MANO DE OBRA
+        BigDecimal totalEnMano = BigDecimal.ZERO;
+        for (ProcessLabor pl : labors) {
+            Labor catLab = laborRepository.findById(pl.getLabor().getId())
+                    .orElseThrow(() -> new RuntimeException("Mano de Obra no encontrada"));
+
+            pl.setDescriptionSnapshot(catLab.getDescription());
+            pl.setDailyWageApplied(catLab.getBaseDailyWage());
+
+            // costo_diario = salario * dotacion
+            BigDecimal dailyCost = pl.getDailyWageApplied().multiply(pl.getDotation()).setScale(2, RoundingMode.HALF_UP);
+            pl.setDailyCost(dailyCost);
+            pl.setProcess(process);
+
+            totalEnMano = totalEnMano.add(dailyCost);
+        }
+
+        // costo_por_leyes_sociales = total_en_mano * socialLawsPercentage
+        BigDecimal costoLeyesSociales = totalEnMano.multiply(process.getSocialLawsPercentage());
+        // costo_diario_personal = total_en_mano + costo_por_leyes_sociales
+        BigDecimal costoDiarioPersonal = totalEnMano.add(costoLeyesSociales);
+
+        // costo_unitario_mano_obra = costo_diario_personal / rendimiento
+        BigDecimal laborUnitCost = costoDiarioPersonal.divide(process.getPerformance(), 2, RoundingMode.HALF_UP);
+        process.setLaborUnitCost(laborUnitCost );
+
+        // TOTALES GENERALES DEL PROCESO
+        // costo_unitario_directo = sumatoria de las 3 listas
+        BigDecimal directUnitCost = materialUnitCost.add(equipmentUnitCost).add(laborUnitCost);
+        process.setDirectUnitCost(directUnitCost);
+
+        // admin_cost_value = directUnitCost * adminPercentage
+        BigDecimal adminCostValue = directUnitCost.multiply(process.getAdminPercentage()).setScale(2, RoundingMode.HALF_UP);
+        process.setAdminCostValue(adminCostValue);
+
+        // totalUnitCost = directUnitCost + adminCostValue
+        BigDecimal totalUnitCost = directUnitCost.add(adminCostValue);
+        process.setTotalUnitCost(totalUnitCost);
+
+        // utilityCostValue = totalUnitCost * utilityContingencyPercentage
+        BigDecimal utilityCostValue = totalUnitCost.multiply(process.getUtilityContingencyPercentage()).setScale(2, RoundingMode.HALF_UP);
+        process.setUtilityCostValue(utilityCostValue);
+
+        // calculatedUnitPrice = totalUnitCost + utilityCostValue
+        BigDecimal calculatedUnitPrice = totalUnitCost.add(utilityCostValue);
+        process.setCalculatedUnitPrice(calculatedUnitPrice);
+
+        // precio_unitario_propuesto (entero)
+        process.setProposedUnitPrice(calculatedUnitPrice.setScale(0, RoundingMode.HALF_UP).intValue());
+
+        // GUARDAR EN LA BASE DE DATOS
+        // Inyectamos las listas dentro del proceso para completar la relación bidireccional
+        process.setMaterials(materials);
+        process.setEquipments(equipments);
+        process.setLabors(labors);
+
+        // Al guardar la cabecera, Hibernate detecta las listas internas y guarda todo en cascada
+        return processRepository.save(process);
+    }
+
+    @Transactional
+    public void deleteApu(String serviceRequest) {
+        if (!processRepository.existsById(serviceRequest)) {
+            throw new RuntimeException("No se puede eliminar: No se encontró ningún APU con la solicitud " + serviceRequest);
+        }
+
+        // Al eliminar el padre, la base de datos elimina los detalles automáticamente
+        processRepository.deleteById(serviceRequest);
+    }
+
+    public ApuResponseDTO getApuByServiceRequest(String serviceRequest) {
+        // 1. Buscar la cabecera principal
+        Process process = processRepository.findById(serviceRequest)
+                .orElseThrow(() -> new RuntimeException("No se encontró ningún APU con la solicitud: " + serviceRequest));
+
+        // 2. Buscar las 3 listas usando los métodos que acabamos de crear
+        List<ProcessMaterial> materials = processMaterialRepository.findByProcessServiceRequest(serviceRequest);
+        List<ProcessEquipment> equipments = processEquipmentRepository.findByProcessServiceRequest(serviceRequest);
+        List<ProcessLabor> labors = processLaborRepository.findByProcessServiceRequest(serviceRequest);
+
+        // 3. Empaquetar la informacion en el DTO y devolverlo
+        return new ApuResponseDTO(process, materials, equipments, labors);
+    }
+
+    public List<Process> getAllApus() {
+        // findAll() busca todas las cabeceras de la tabla 'processes'
+        return processRepository.findAll();
+    }
+
+    public List<Process> searchApus(String companyId, String companyName, String mainProcess, String description, String power, String serial, String brand, String location, boolean exactMatch) {
+
+        // Limpiamos strings vacíos para evitar falsos positivos en el IS NULL
+        companyId = StringUtilz.prepararFiltro(companyId, exactMatch);
+        companyName = StringUtilz.prepararFiltro(companyName, exactMatch);
+        mainProcess = StringUtilz.prepararFiltro(mainProcess, exactMatch);
+        description = StringUtilz.prepararFiltro(description, exactMatch);
+        power = StringUtilz.prepararFiltro(power, exactMatch);
+        serial = StringUtilz.prepararFiltro(serial, exactMatch);
+        brand = StringUtilz.prepararFiltro(brand, exactMatch);
+        location = StringUtilz.prepararFiltro(location, exactMatch);
+
+        // Si no consigue nada, Spring Data JPA devuelve [] automáticamente.
+        return processRepository.searchApus(companyId, companyName, mainProcess, description, power, serial, brand, location);
+    }
+}
+
+==> backend/src/main/java/com/embobinados/apugen_backend/config/CorsConfig.java <==
+package com.embobinados.apugen_backend.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173") // Puerto por defecto de Vite/React
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*");
+    }
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/config/CustomFunctionContributor.java <==
+package com.embobinados.apugen_backend.config;
+
+import org.hibernate.boot.model.FunctionContributions;
+import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.type.StandardBasicTypes;
+
+public class CustomFunctionContributor implements FunctionContributor {
+
+    @Override
+    public void contributeFunctions(FunctionContributions functionContributions) {
+        functionContributions.getFunctionRegistry()
+                .registerPattern(
+                        "normalizar",
+                        "unaccent(lower(?1))",
+                        functionContributions.getTypeConfiguration()
+                                .getBasicTypeRegistry()
+                                .resolve(StandardBasicTypes.STRING)
+                );
+    }
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/LaborRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.Labor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface LaborRepository extends JpaRepository<Labor, String> {
+    @Query("SELECT l FROM Labor l WHERE normalizar(l.description) LIKE normalizar(cast(:descripcion as String))")
+    List<Labor> buscarPorDescripcion(@Param("descripcion") String descripcion);
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/ProcessEquipmentRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.ProcessEquipment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ProcessEquipmentRepository extends JpaRepository<ProcessEquipment, String> {
+    List<ProcessEquipment> findByProcessServiceRequest(String serviceRequest);
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/ProcessMaterialRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.ProcessMaterial;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ProcessMaterialRepository extends JpaRepository<ProcessMaterial, String> {
+    List<ProcessMaterial> findByProcessServiceRequest(String serviceRequest);
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/CompanyRepository.java <==
+package com.embobinados.apugen_backend.repository;
+
+import com.embobinados.apugen_backend.entity.Company;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface CompanyRepository extends JpaRepository<Company, String> {
+
+    @Query("SELECT c FROM Company c WHERE normalizar(c.name) LIKE normalizar(cast(:nombre as String))")
+    List<Company> buscarPorNombre(@Param("nombre") String nombre);
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/MaterialRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.Material;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface MaterialRepository extends JpaRepository<Material, String> {
+    @Query("SELECT m FROM Material m WHERE normalizar(m.description) LIKE normalizar(cast(:descripcion as String))")
+    List<Material> buscarPorDescripcion(@Param("descripcion") String descripcion);
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/ProcessRepository.java <==
+package com.embobinados.apugen_backend.repository;
+
+import com.embobinados.apugen_backend.entity.Process;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ProcessRepository extends JpaRepository<Process, String> {
+
+    @Query("""
+    SELECT p FROM Process p 
+    WHERE (:companyId IS NULL OR normalizar(cast(p.company.id as String)) LIKE normalizar(cast(:companyId as String)))
+      AND (:companyName IS NULL OR normalizar(p.company.name) LIKE normalizar(cast(:companyName as String)))
+      AND (:mainProcess IS NULL OR normalizar(p.mainProcess) LIKE normalizar(cast(:mainProcess as String)))
+      AND (:description IS NULL OR normalizar(p.description) LIKE normalizar(cast(:description as String)))
+      AND (:power IS NULL OR normalizar(p.power) LIKE normalizar(cast(:power as String)))
+      AND (:serial IS NULL OR normalizar(p.serial) LIKE normalizar(cast(:serial as String)))
+      AND (:brand IS NULL OR normalizar(p.brand) LIKE normalizar(cast(:brand as String)))
+      AND (:location IS NULL OR normalizar(p.location) LIKE normalizar(cast(:location as String)))
+""")
+    List<Process> searchApus(
+            @Param("companyId") String companyId,
+            @Param("companyName") String companyName,
+            @Param("mainProcess") String mainProcess,
+            @Param("description") String description,
+            @Param("power") String power,
+            @Param("serial") String serial,
+            @Param("brand") String brand,
+            @Param("location") String location
+    );
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/ProcessLaborRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.ProcessLabor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ProcessLaborRepository extends JpaRepository<ProcessLabor, String> {
+    List<ProcessLabor> findByProcessServiceRequest(String serviceRequest);
+}
+==> backend/src/main/java/com/embobinados/apugen_backend/repository/EquipmentRepository.java <==
+package com.embobinados.apugen_backend.repository;
+import com.embobinados.apugen_backend.entity.Equipment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface EquipmentRepository extends JpaRepository<Equipment, String> {
+    @Query("SELECT e FROM Equipment e WHERE normalizar(e.description) LIKE normalizar(cast(:descripcion as String))")
+    List<Equipment> buscarPorDescripcion(@Param("descripcion") String descripcion);
+}
+==> backend/src/test/java/com/embobinados/apugen_backend/ApugenBackendApplicationTests.java <==
+package com.embobinados.apugen_backend;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class ApugenBackendApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
