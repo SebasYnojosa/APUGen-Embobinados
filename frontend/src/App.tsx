@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import ApuList from './pages/ApuList';
 import ApuForm from './pages/ApuForm';
+import ApuDetail from "./pages/ApuDetail.tsx";
 import MaterialManager from './pages/MaterialManager';
 import CompanyManager from './pages/CompanyManager';
 import EquipmentManager from './pages/EquipmentManager';
@@ -59,8 +60,9 @@ function App() {
             {/* RUTAS DEL SISTEMA */}
             <main className="max-w-7xl mx-auto py-8 px-4">
                 <Routes>
-                    <Route path="/" element={<ApuList />} />
+                    <Route path="/apus" element={<ApuList />} />
                     <Route path="/apus/nuevo" element={<ApuForm />} />
+                    <Route path="/apus/detalle" element={<ApuDetail />} />
                     <Route path="/catalogos/empresas" element={<CompanyManager />} />
                     <Route path="/catalogos/materiales" element={<MaterialManager />} />
                     <Route path="/catalogos/equipos" element={<EquipmentManager />} />

@@ -73,6 +73,12 @@ export default function ApuList() {
                                 <td>{apu.description}</td>
                                 <td className="font-bold text-primary">${apu.proposedUnitPrice?.toLocaleString()}</td>
                                 <td className="text-center space-x-2">
+                                    <Link
+                                        to={`/apus/detalle?serviceRequest=${encodeURIComponent(apu.serviceRequest)}`}
+                                        className="btn btn-xs btn-outline btn-info"
+                                    >
+                                        Ver Detalles
+                                    </Link>
                                     <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(apu.serviceRequest)}>
                                         Eliminar
                                     </button>

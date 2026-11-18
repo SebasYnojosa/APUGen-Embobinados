@@ -98,4 +98,9 @@ export interface ApuResponseDTO {
     materials: ProcessMaterial[];
     equipments: ProcessEquipment[];
     labors: ProcessLabor[];
+    totalMaterials: number;
+    totalEquipmentsDaily: number;
+    totalLaborsBase: number;
+    socialLawsCost: number;
+    totalLaborsDaily: number;
 }

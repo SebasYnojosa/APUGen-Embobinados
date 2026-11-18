@@ -7,6 +7,7 @@ import com.embobinados.apugen_backend.entity.ProcessMaterial;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -16,4 +17,11 @@ public class ApuResponseDTO {
     private List<ProcessMaterial> materials;
     private List<ProcessEquipment> equipments;
     private List<ProcessLabor> labors;
+
+    // Subtotales calculados para la vista detallada
+    private BigDecimal totalMaterials;
+    private BigDecimal totalEquipmentsDaily;
+    private BigDecimal totalLaborsBase;
+    private BigDecimal socialLawsCost;
+    private BigDecimal totalLaborsDaily;
 }

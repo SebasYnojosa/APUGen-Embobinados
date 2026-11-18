@@ -157,13 +157,35 @@ public class ApuService {
         Process process = processRepository.findById(serviceRequest)
                 .orElseThrow(() -> new RuntimeException("No se encontró ningún APU con la solicitud: " + serviceRequest));
 
-        // 2. Buscar las 3 listas usando los métodos que acabamos de crear
+        // 2. Buscar las 3 listas
         List<ProcessMaterial> materials = processMaterialRepository.findByProcessServiceRequest(serviceRequest);
         List<ProcessEquipment> equipments = processEquipmentRepository.findByProcessServiceRequest(serviceRequest);
         List<ProcessLabor> labors = processLaborRepository.findByProcessServiceRequest(serviceRequest);
 
-        // 3. Empaquetar la informacion en el DTO y devolverlo
-        return new ApuResponseDTO(process, materials, equipments, labors);
+        // 3. Calcular subtotales intermedios con BigDecimal
+        BigDecimal totalMaterials = materials.stream()
+                .map(ProcessMaterial::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalEquipmentsDaily = equipments.stream()
+                .map(ProcessEquipment::getDailyUseCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalLaborsBase = labors.stream()
+                .map(ProcessLabor::getDailyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal socialLawsCost = totalLaborsBase
+                .multiply(process.getSocialLawsPercentage())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal totalLaborsDaily = totalLaborsBase.add(socialLawsCost);
+
+        // 4. Empaquetar y devolver
+        return new ApuResponseDTO(
+                process, materials, equipments, labors,
+                totalMaterials, totalEquipmentsDaily, totalLaborsBase, socialLawsCost, totalLaborsDaily
+        );
     }
 
     public List<Process> getAllApus() {

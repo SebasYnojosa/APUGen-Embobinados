@@ -16,13 +16,17 @@ export const apuService = {
     },
 
     // Obtener un APU específico con todas sus listas de detalles
-    getApuById: async (serviceRequest: string): Promise<ApuResponseDTO> => {
-        const response = await api.get<ApuResponseDTO>(`/apus/${serviceRequest}`);
+    getApuByServiceRequest: async (serviceRequest: string): Promise<ApuResponseDTO> => {
+        const response = await api.get<ApuResponseDTO>(`/apus/porOrden`, {
+            params: { serviceRequest }
+        });
         return response.data;
     },
 
     // Eliminar un APU en cascada
     deleteApu: async (serviceRequest: string): Promise<void> => {
-        await api.delete(`/apus/${serviceRequest}`);
+        await api.delete(`/apus/`, {
+            params: { serviceRequest }
+        });
     }
 };
