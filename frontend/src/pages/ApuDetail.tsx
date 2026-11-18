@@ -41,7 +41,7 @@ export default function ApuDetail() {
         return (
             <div className="max-w-4xl mx-auto mt-8 alert alert-error shadow-lg">
                 <span>{error || 'APU no encontrado'}</span>
-                <button className="btn btn-sm" onClick={() => navigate('/')}>Volver al inicio</button>
+                <button className="btn btn-sm" onClick={() => navigate('/apus')}>Volver al inicio</button>
             </div>
         );
     }
@@ -72,7 +72,13 @@ export default function ApuDetail() {
                     <p className="text-base-content/70 text-lg">{process.mainProcess} - <span className="font-semibold text-base-content">{process.company?.name}</span></p>
                 </div>
                 <div className="space-x-2 print:hidden">
-                    <button className="btn btn-outline" onClick={() => navigate('/')}>Volver</button>
+                    <button className="btn btn-outline" onClick={() => navigate('/apus')}>Volver</button>
+                    <button
+                        className="btn btn-warning btn-outline"
+                        onClick={() => navigate(`/apus/editar?serviceRequest=${encodeURIComponent(process.serviceRequest)}`)}
+                    >
+                        Editar
+                    </button>
                     <button className="btn btn-primary" onClick={() => window.print()}>🖨️ Imprimir / PDF</button>
                 </div>
             </div>

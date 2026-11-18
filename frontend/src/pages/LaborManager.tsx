@@ -130,7 +130,7 @@ export default function LaborManager() {
                         </div>
                         <div className="form-control">
                             <label className="label"><span className="label-text">Salario Diario*</span></label>
-                            <input type="number" step="0.01" name="baseValue" value={currentLabor.baseDailyWage || ''} onChange={handleInputChange} className="input input-bordered" placeholder="0.01" required />
+                            <input type="number" step="0.01" name="baseDailyWage" value={currentLabor.baseDailyWage || ''} onChange={handleInputChange} className="input input-bordered" placeholder="0.01" required />
                         </div>
                         <div className="modal-action">
                             <button type="submit" className="btn btn-primary">{isEditing ? 'Actualizar' : 'Guardar'}</button>

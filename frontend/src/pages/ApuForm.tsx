@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { catalogService } from '../services/catalogServices';
+import { apuService } from "../services/apuServices.ts";
 import api from '../services/api'; // Necesario para el POST final
 import type { Material, Equipment, Labor, Company } from '../types';
 
 export default function ApuForm() {
     const navigate = useNavigate();
 
+    const [searchParams] = useSearchParams();
     const [catalogCompanies, setCatalogCompanies] = useState<Company[]>([]);
     const [catalogMaterials, setCatalogMaterials] = useState<Material[]>([]);
     const [catalogEquipments, setCatalogEquipments] = useState<Equipment[]>([]);
     const [catalogLabors, setCatalogLabors] = useState<Labor[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
+    const editServiceRequest = searchParams.get('serviceRequest');
+    const isEditing = Boolean(editServiceRequest);
 
     useEffect(() => {
         const fetchCatalogs = async () => {
@@ -28,6 +33,65 @@ export default function ApuForm() {
         };
         fetchCatalogs();
     }, []);
+
+    useEffect(() => {
+        if (!editServiceRequest) return;
+
+        const loadApuToEdit = async () => {
+            try {
+                const data = await apuService.getApuByServiceRequest(editServiceRequest);
+                const p = data.process;
+
+                setHeader({
+                    serviceRequest: p.serviceRequest,
+                    companyId: p.company?.id || '',
+                    companyName: p.company?.name || '',
+                    isNewCompany: false,
+                    mainProcess: p.mainProcess,
+                    description: p.description,
+                    power: p.power || '',
+                    serial: p.serial || '',
+                    brand: p.brand || '',
+                    location: p.location || '',
+                    itemQuantity: p.itemQuantity,
+                    performance: p.performance,
+                    socialLawsPercentage: p.socialLawsPercentage,
+                    adminPercentage: p.adminPercentage,
+                    utilityContingencyPercentage: p.utilityContingencyPercentage
+                });
+
+                setMaterials(data.materials.map(m => ({
+                    materialId: m.material.id,
+                    description: m.descriptionSnapshot,
+                    unit: m.unitSnapshot,
+                    price: m.costApplied,
+                    quantity: m.quantity,
+                    isNew: false
+                })));
+
+                setEquipments(data.equipments.map(e => ({
+                    equipmentId: e.equipment.id,
+                    description: e.descriptionSnapshot,
+                    baseValue: e.valueApplied,
+                    depreciation: e.depreciationFactorApplied,
+                    quantity: e.quantity,
+                    isNew: false
+                })));
+
+                setLabors(data.labors.map(l => ({
+                    laborId: l.labor.id,
+                    description: l.descriptionSnapshot,
+                    dailyWage: l.dailyWageApplied,
+                    dotation: l.dotation,
+                    isNew: false
+                })));
+            } catch (err: any) {
+                alert(err.response?.data?.message || 'Error al cargar el APU para edición.');
+                navigate('/apus');
+            }
+        };
+        loadApuToEdit();
+    }, [editServiceRequest, navigate]);
 
     // Agregamos isNewCompany para saber si debemos crearla al guardar
     const [header, setHeader] = useState({
@@ -205,7 +269,7 @@ export default function ApuForm() {
             // 6. Enviar APU
             await api.post('/apus/generar', apuDTO);
             alert("APU Generado y Guardado Exitosamente 🎉");
-            navigate('/'); // Redirige al listado
+            navigate('/apus'); // Redirige al listado
 
         } catch (error: any) {
             alert("Error al generar APU: " + (error.response?.data?.message || "Revisa los campos"));
@@ -323,7 +387,7 @@ export default function ApuForm() {
             </div>
 
             <div className="flex justify-end gap-3 mt-8 border-t pt-6">
-                <button type="button" onClick={() => navigate('/')} className="btn btn-ghost" disabled={isSaving}>Cancelar</button>
+                <button type="button" onClick={() => navigate('/apus')} className="btn btn-ghost" disabled={isSaving}>Cancelar</button>
                 <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSaving}>
                     {isSaving ? <span className="loading loading-spinner"></span> : 'Generar APU'}
                 </button>

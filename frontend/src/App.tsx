@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import {Routes, Route, Link, Navigate} from 'react-router-dom';
 import ApuList from './pages/ApuList';
 import ApuForm from './pages/ApuForm';
 import ApuDetail from "./pages/ApuDetail.tsx";
@@ -27,11 +27,11 @@ function App() {
             {/* NAVBAR SUPERIOR */}
             <div className="navbar bg-base-100 shadow-sm px-6">
                 <div className="flex-1">
-                    <Link to="/" className="btn btn-ghost text-xl font-bold">APU Gen</Link>
+                    <Link to="/apus" className="btn btn-ghost text-xl font-bold">APU Gen</Link>
                 </div>
                 <div className="flex-none">
                     <ul className="menu menu-horizontal px-1 font-semibold gap-2 items-center">
-                        <li><Link to="/" onClick={() => setIsCatalogOpen(false)}>APUs</Link></li>
+                        <li><Link to="/apus" onClick={() => setIsCatalogOpen(false)}>APUs</Link></li>
 
                         {/* MENÚ DESPLEGABLE DE CATÁLOGOS COMPLETO */}
                         <li className="relative" ref={dropdownRef}>
@@ -60,8 +60,10 @@ function App() {
             {/* RUTAS DEL SISTEMA */}
             <main className="max-w-7xl mx-auto py-8 px-4">
                 <Routes>
+                    <Route path="/" element={<Navigate replace to="/apus" />} />
                     <Route path="/apus" element={<ApuList />} />
                     <Route path="/apus/nuevo" element={<ApuForm />} />
+                    <Route path="/apus/editar" element={<ApuForm />} />
                     <Route path="/apus/detalle" element={<ApuDetail />} />
                     <Route path="/catalogos/empresas" element={<CompanyManager />} />
                     <Route path="/catalogos/materiales" element={<MaterialManager />} />

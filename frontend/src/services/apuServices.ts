@@ -28,5 +28,13 @@ export const apuService = {
         await api.delete(`/apus/`, {
             params: { serviceRequest }
         });
-    }
+    },
+
+    // Actualizar un APU en cascada
+    updateApu: async (serviceRequest: string, apuDTO: any): Promise<Process> => {
+        const response = await api.put<Process>('/apus', apuDTO, {
+            params: { serviceRequest }
+        });
+        return response.data;
+    },
 };

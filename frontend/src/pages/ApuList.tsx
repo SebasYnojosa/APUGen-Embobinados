@@ -79,6 +79,12 @@ export default function ApuList() {
                                     >
                                         Ver Detalles
                                     </Link>
+                                    <Link
+                                        to={`/apus/editar?serviceRequest=${encodeURIComponent(apu.serviceRequest)}`}
+                                        className="btn btn-xs btn-outline btn-warning"
+                                    >
+                                        Editar
+                                    </Link>
                                     <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(apu.serviceRequest)}>
                                         Eliminar
                                     </button>

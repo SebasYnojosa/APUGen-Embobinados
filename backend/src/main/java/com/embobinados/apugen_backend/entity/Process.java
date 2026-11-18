@@ -43,16 +43,16 @@ public class Process {
     @Column(name = "item_quantity", precision = 12, scale = 2)
     private BigDecimal itemQuantity; // Cantidad de veces que se realizará el item
 
-    @Column(precision = 12, scale = 2)
+    @Column(precision = 12, scale = 4)
     private BigDecimal performance; // Rendimiento del item
 
-    @Column(name = "social_laws_percentage", precision = 5, scale = 2)
+    @Column(name = "social_laws_percentage", precision = 5, scale = 4)
     private BigDecimal socialLawsPercentage; // Porcentaje Leyes Sociales (Ej: 0.75 para 75%)
 
-    @Column(name = "admin_percentage", precision = 5, scale = 2)
+    @Column(name = "admin_percentage", precision = 5, scale = 4)
     private BigDecimal adminPercentage; // Porcentaje Administración
 
-    @Column(name = "utility_contingency_percentage", precision = 5, scale = 2)
+    @Column(name = "utility_contingency_percentage", precision = 5, scale = 4)
     private BigDecimal utilityContingencyPercentage; // Porcentaje Utilidad e Imprevistos
 
     // --- TOTALES CALCULADOS (Se guardan para congelar el presupuesto) ---

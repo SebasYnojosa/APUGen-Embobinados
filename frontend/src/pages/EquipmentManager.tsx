@@ -63,7 +63,7 @@ export default function EquipmentManager() {
 
         try {
             if (isEditing) {
-                await catalogService.updateMaterial(currentEquipment.id, currentEquipment);
+                await catalogService.updateEquipment(currentEquipment.id, currentEquipment);
                 setSuccessMessage('Material actualizado exitosamente.');
                 fetchEquipment();
                 closeModal(); // Si edita, sí cerramos el modal

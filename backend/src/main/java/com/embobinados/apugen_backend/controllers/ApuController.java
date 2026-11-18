@@ -120,4 +120,57 @@ public class ApuController {
         apuService.deleteApu(serviceRequest);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping
+    public ResponseEntity<Process> actualizarApu(
+            @RequestParam("serviceRequest") String serviceRequest,
+            @RequestBody ApuRequestDTO dto
+    ) {
+        Process processData = new Process();
+        processData.setMainProcess(dto.getMainProcess());
+        processData.setDescription(dto.getDescription());
+        processData.setPower(dto.getPower());
+        processData.setSerial(dto.getSerial());
+        processData.setBrand(dto.getBrand());
+        processData.setLocation(dto.getLocation());
+        processData.setItemQuantity(dto.getItemQuantity());
+        processData.setPerformance(dto.getPerformance());
+        processData.setSocialLawsPercentage(dto.getSocialLawsPercentage());
+        processData.setAdminPercentage(dto.getAdminPercentage());
+        processData.setUtilityContingencyPercentage(dto.getUtilityContingencyPercentage());
+
+        Company company = new Company();
+        company.setId(dto.getCompanyId());
+        processData.setCompany(company);
+
+        List<ProcessMaterial> materials = dto.getMaterials().stream().map(mDto -> {
+            ProcessMaterial pm = new ProcessMaterial();
+            Material material = new Material();
+            material.setId(mDto.getMaterialId());
+            pm.setMaterial(material);
+            pm.setQuantity(mDto.getQuantity());
+            return pm;
+        }).collect(Collectors.toList());
+
+        List<ProcessEquipment> equipments = dto.getEquipments().stream().map(eDto -> {
+            ProcessEquipment pe = new ProcessEquipment();
+            Equipment equipment = new Equipment();
+            equipment.setId(eDto.getEquipmentId());
+            pe.setEquipment(equipment);
+            pe.setQuantity(eDto.getQuantity());
+            return pe;
+        }).collect(Collectors.toList());
+
+        List<ProcessLabor> labors = dto.getLabors().stream().map(lDto -> {
+            ProcessLabor pl = new ProcessLabor();
+            Labor labor = new Labor();
+            labor.setId(lDto.getLaborId());
+            pl.setLabor(labor);
+            pl.setDotation(lDto.getDotation());
+            return pl;
+        }).collect(Collectors.toList());
+
+        Process updated = apuService.updateApu(serviceRequest, processData, materials, equipments, labors);
+        return ResponseEntity.ok(updated);
+    }
 }
