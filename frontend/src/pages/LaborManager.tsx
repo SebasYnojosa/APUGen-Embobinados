@@ -89,7 +89,7 @@ export default function LaborManager() {
     return (
         <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
-                <div><h1 className="text-2xl font-bold">Gestión de Cargos</h1></div>
+                <div><h1 className="text-2xl font-bold">Gestión de Cargos</h1><p className="text-sm text-base-content/70">Administra a los trabajadores y sus salarios diarios</p></div>
                 <button className="btn btn-primary btn-sm" onClick={openCreateModal}>+ Nuevo Cargo</button>
             </div>
 

@@ -110,7 +110,7 @@ export default function EquipmentManager() {
                     <tbody>
                     {loading ? <tr><td colSpan={5} className="text-center py-6">Cargando equipos...</td></tr> : equipments.length === 0 ? <tr><td colSpan={5} className="text-center py-6">No hay equipos registrados.</td></tr> : equipments.map((equ) => (
                         <tr key={equ.id}>
-                            <td className="font-semibold">{equ.id}</td><td>{equ.description}</td><td><span className="badge badge-ghost">{equ.baseValue.toFixed(2)}</span></td><td>${equ.depreciationFactor.toFixed(6)}</td>
+                            <td className="font-semibold">{equ.id}</td><td>{equ.description}</td><td><span className="badge badge-ghost">{equ.baseValue.toFixed(2)}</span></td><td>{equ.depreciationFactor.toFixed(6)}</td>
                             <td className="text-center space-x-2">
                                 <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditModal(equ)}>Editar</button>
                                 <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(equ.id)}>Eliminar</button>
