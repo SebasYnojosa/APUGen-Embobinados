@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { catalogService } from '../services/catalogServices';
-import type {Equipment, Labor} from '../types';
+import type { Labor } from '../types';
 
 export default function LaborManager() {
     const [labors, setLabor] = useState<Labor[]>([]);

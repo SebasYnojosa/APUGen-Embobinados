@@ -1,6 +1,7 @@
 package com.embobinados.apugen_backend.service;
 
-import com.embobinados.apugen_backend.dto.ApuResponseDTO;
+import com.embobinados.apugen_backend.dto.ProcessResponseDTO;
+import com.embobinados.apugen_backend.dto.ServiceResponseDTO;
 import com.embobinados.apugen_backend.entity.*;
 import com.embobinados.apugen_backend.entity.Process;
 import com.embobinados.apugen_backend.repository.*;
@@ -11,182 +12,89 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ApuService {
     private final ProcessRepository processRepository;
+    private final ProcessServiceRepository processServiceRepository;
+    private final CompanyRepository companyRepository;
     private final MaterialRepository materialRepository;
     private final EquipmentRepository equipmentRepository;
     private final LaborRepository laborRepository;
-    private final ProcessMaterialRepository processMaterialRepository;
-    private final ProcessEquipmentRepository processEquipmentRepository;
-    private final ProcessLaborRepository processLaborRepository;
+    private final ServiceMaterialRepository serviceMaterialRepository;
+    private final ServiceEquipmentRepository serviceEquipmentRepository;
+    private final ServiceLaborRepository serviceLaborRepository;
+
+    // ==========================================
+    // GESTIÓN DE PROCESOS (OBRAS)
+    // ==========================================
 
     @Transactional
-    public Process calcAndSaveApu(
-            Process process,
-            List<ProcessMaterial> materials,
-            List<ProcessEquipment> equipments,
-            List<ProcessLabor> labors
-    ) {
-        recalcularTotales(process, materials, equipments, labors);
+    public Process createProcess(Process process) {
+        if (process.getServiceRequest() == null || process.getServiceRequest().isBlank()) {
+            throw new RuntimeException("El ID de la solicitud de servicio (obra) es obligatorio.");
+        }
+        String cleanId = process.getServiceRequest().trim();
+        if (processRepository.existsById(cleanId)) {
+            throw new RuntimeException("Ya existe un proceso registrado con la solicitud: " + cleanId);
+        }
+        process.setServiceRequest(cleanId);
 
-        // Inyectamos las listas dentro del proceso para completar la relación bidireccional
-        process.setMaterials(materials);
-        process.setEquipments(equipments);
-        process.setLabors(labors);
+        if (process.getCompany() == null || process.getCompany().getId() == null) {
+            throw new RuntimeException("La empresa del proceso es obligatoria.");
+        }
+        Company company = companyRepository.findById(process.getCompany().getId())
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada: " + process.getCompany().getId()));
+        process.setCompany(company);
 
-        // Al guardar la cabecera, Hibernate detecta las listas internas y guarda todo en cascada
         return processRepository.save(process);
     }
 
-    private void recalcularTotales(
-            Process process,
-            List<ProcessMaterial> materials,
-            List<ProcessEquipment> equipments,
-            List<ProcessLabor> labors
-    ) {
-        if (process.getPerformance() == null || process.getPerformance().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("El rendimiento del APU debe ser mayor a cero para poder calcular los costos.");
-        }
-
-        // CALCULO DE MATERIALES
-        BigDecimal totalMateriales = BigDecimal.ZERO;
-        for (ProcessMaterial pm : materials) {
-            Material catMat = materialRepository.findById(pm.getMaterial().getId())
-                    .orElseThrow(() -> new RuntimeException("Material no encontrado: " + pm.getMaterial().getId()));
-
-            pm.setDescriptionSnapshot(catMat.getDescription());
-            pm.setUnitSnapshot(catMat.getUnit());
-            pm.setCostApplied(catMat.getBaseCost());
-
-            BigDecimal amount = pm.getCostApplied().multiply(pm.getQuantity()).setScale(2, RoundingMode.HALF_UP);
-            pm.setAmount(amount);
-            pm.setProcess(process);
-
-            totalMateriales = totalMateriales.add(amount);
-        }
-
-        BigDecimal materialUnitCost = totalMateriales.multiply(process.getItemQuantity()).setScale(2, RoundingMode.HALF_UP);
-        process.setMaterialUnitCost(materialUnitCost);
-
-        // CALCULO DE EQUIPOS
-        BigDecimal totalEquipos = BigDecimal.ZERO;
-        for (ProcessEquipment pe : equipments) {
-            Equipment catEq = equipmentRepository.findById(pe.getEquipment().getId())
-                    .orElseThrow(() -> new RuntimeException("Equipo no encontrado: " + pe.getEquipment().getId()));
-
-            pe.setDescriptionSnapshot(catEq.getDescription());
-            pe.setValueApplied(catEq.getBaseValue());
-            pe.setDepreciationFactorApplied(catEq.getDepreciationFactor());
-
-            BigDecimal dailyUseCost = pe.getValueApplied().multiply(pe.getDepreciationFactorApplied().setScale(6, RoundingMode.HALF_UP));
-            pe.setDailyUseCost(dailyUseCost);
-            pe.setProcess(process);
-
-            totalEquipos = totalEquipos.add(dailyUseCost);
-        }
-
-        BigDecimal equipmentUnitCost = totalEquipos.divide(process.getPerformance(), 2, RoundingMode.HALF_UP);
-        process.setEquipmentUnitCost(equipmentUnitCost);
-
-        // CALCULO DE MANO DE OBRA
-        BigDecimal totalEnMano = BigDecimal.ZERO;
-        for (ProcessLabor pl : labors) {
-            Labor catLab = laborRepository.findById(pl.getLabor().getId())
-                    .orElseThrow(() -> new RuntimeException("Mano de Obra no encontrada: " + pl.getLabor().getId()));
-
-            pl.setDescriptionSnapshot(catLab.getDescription());
-            pl.setDailyWageApplied(catLab.getBaseDailyWage());
-
-            BigDecimal dailyCost = pl.getDailyWageApplied().multiply(pl.getDotation()).setScale(2, RoundingMode.HALF_UP);
-            pl.setDailyCost(dailyCost);
-            pl.setProcess(process);
-
-            totalEnMano = totalEnMano.add(dailyCost);
-        }
-
-        BigDecimal costoLeyesSociales = totalEnMano.multiply(process.getSocialLawsPercentage());
-        BigDecimal costoDiarioPersonal = totalEnMano.add(costoLeyesSociales);
-
-        BigDecimal laborUnitCost = costoDiarioPersonal.divide(process.getPerformance(), 2, RoundingMode.HALF_UP);
-        process.setLaborUnitCost(laborUnitCost);
-
-        // TOTALES GENERALES DEL PROCESO
-        BigDecimal directUnitCost = materialUnitCost.add(equipmentUnitCost).add(laborUnitCost);
-        process.setDirectUnitCost(directUnitCost);
-
-        BigDecimal adminCostValue = directUnitCost.multiply(process.getAdminPercentage()).setScale(2, RoundingMode.HALF_UP);
-        process.setAdminCostValue(adminCostValue);
-
-        BigDecimal totalUnitCost = directUnitCost.add(adminCostValue);
-        process.setTotalUnitCost(totalUnitCost);
-
-        BigDecimal utilityCostValue = totalUnitCost.multiply(process.getUtilityContingencyPercentage()).setScale(2, RoundingMode.HALF_UP);
-        process.setUtilityCostValue(utilityCostValue);
-
-        BigDecimal calculatedUnitPrice = totalUnitCost.add(utilityCostValue);
-        process.setCalculatedUnitPrice(calculatedUnitPrice);
-
-        process.setProposedUnitPrice(calculatedUnitPrice.setScale(0, RoundingMode.HALF_UP).intValue());
+    public List<Process> getAllProcesses() {
+        List<Process> processes = processRepository.findAll();
+        processes.forEach(p -> sortServicesBySequence(p.getServices(), p.getServiceRequest()));
+        return processes;
     }
 
-    @Transactional
-    public void deleteApu(String serviceRequest) {
-        if (!processRepository.existsById(serviceRequest)) {
-            throw new RuntimeException("No se puede eliminar: No se encontró ningún APU con la solicitud " + serviceRequest);
-        }
-
-        // Al eliminar el padre, la base de datos elimina los detalles automáticamente
-        processRepository.deleteById(serviceRequest);
-    }
-
-    public ApuResponseDTO getApuByServiceRequest(String serviceRequest) {
-        // 1. Buscar la cabecera principal
+    public ProcessResponseDTO getProcessByServiceRequest(String serviceRequest) {
         Process process = processRepository.findById(serviceRequest)
-                .orElseThrow(() -> new RuntimeException("No se encontró ningún APU con la solicitud: " + serviceRequest));
+                .orElseThrow(() -> new RuntimeException("No se encontró ningún proceso con la solicitud: " + serviceRequest));
 
-        // 2. Buscar las 3 listas
-        List<ProcessMaterial> materials = processMaterialRepository.findByProcessServiceRequest(serviceRequest);
-        List<ProcessEquipment> equipments = processEquipmentRepository.findByProcessServiceRequest(serviceRequest);
-        List<ProcessLabor> labors = processLaborRepository.findByProcessServiceRequest(serviceRequest);
+        List<ProcessService> services = processServiceRepository.findByProcessServiceRequest(serviceRequest);
+        sortServicesBySequence(services, serviceRequest);
 
-        // 3. Calcular subtotales intermedios con BigDecimal
-        BigDecimal totalMaterials = materials.stream()
-                .map(ProcessMaterial::getAmount)
+        BigDecimal totalCalculatedPrice = services.stream()
+                .map(s -> s.getCalculatedUnitPrice() != null ? s.getCalculatedUnitPrice() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalEquipmentsDaily = equipments.stream()
-                .map(ProcessEquipment::getDailyUseCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalProposedPrice = services.stream()
+                .mapToLong(s -> s.getProposedUnitPrice() != null ? s.getProposedUnitPrice().longValue() : 0L)
+                .sum();
 
-        BigDecimal totalLaborsBase = labors.stream()
-                .map(ProcessLabor::getDailyCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal socialLawsCost = totalLaborsBase
-                .multiply(process.getSocialLawsPercentage())
-                .setScale(2, RoundingMode.HALF_UP);
-
-        BigDecimal totalLaborsDaily = totalLaborsBase.add(socialLawsCost);
-
-        // 4. Empaquetar y devolver
-        return new ApuResponseDTO(
-                process, materials, equipments, labors,
-                totalMaterials, totalEquipmentsDaily, totalLaborsBase, socialLawsCost, totalLaborsDaily
+        return new ProcessResponseDTO(
+                process,
+                services,
+                services.size(),
+                totalCalculatedPrice,
+                totalProposedPrice
         );
     }
 
-    public List<Process> getAllApus() {
-        // findAll() busca todas las cabeceras de la tabla 'processes'
-        return processRepository.findAll();
-    }
-
-    public List<Process> searchApus(String companyId, String companyName, String mainProcess, String description, String power, String serial, String brand, String location, boolean exactMatch) {
-
-        // Limpiamos strings vacíos para evitar falsos positivos en el IS NULL
+    public List<Process> searchProcesses(
+            String companyId,
+            String companyName,
+            String mainProcess,
+            String description,
+            String power,
+            String serial,
+            String brand,
+            String location,
+            boolean exactMatch
+    ) {
         companyId = StringUtilz.prepararFiltro(companyId, exactMatch);
         companyName = StringUtilz.prepararFiltro(companyName, exactMatch);
         mainProcess = StringUtilz.prepararFiltro(mainProcess, exactMatch);
@@ -196,46 +104,292 @@ public class ApuService {
         brand = StringUtilz.prepararFiltro(brand, exactMatch);
         location = StringUtilz.prepararFiltro(location, exactMatch);
 
-        // Si no consigue nada, Spring Data JPA devuelve [] automáticamente.
-        return processRepository.searchApus(companyId, companyName, mainProcess, description, power, serial, brand, location);
+        List<Process> results = processRepository.searchApus(
+                companyId, companyName, mainProcess, description, power, serial, brand, location
+        );
+        results.forEach(p -> sortServicesBySequence(p.getServices(), p.getServiceRequest()));
+        return results;
     }
 
     @Transactional
-    public Process updateApu(
-            String serviceRequest,
-            Process updatedData,
-            List<ProcessMaterial> newMaterials,
-            List<ProcessEquipment> newEquipments,
-            List<ProcessLabor> newLabors
-    ) {
+    public Process updateProcess(String serviceRequest, Process updatedData) {
         Process existing = processRepository.findById(serviceRequest)
-                .orElseThrow(() -> new RuntimeException("No se encontró el APU con la solicitud: " + serviceRequest));
+                .orElseThrow(() -> new RuntimeException("No se encontró el proceso con la solicitud: " + serviceRequest));
 
-        // 1. Actualizar cabecera y variables
-        existing.setCompany(updatedData.getCompany());
+        if (updatedData.getCompany() == null || updatedData.getCompany().getId() == null) {
+            throw new RuntimeException("La empresa del proceso es obligatoria.");
+        }
+        Company company = companyRepository.findById(updatedData.getCompany().getId())
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada: " + updatedData.getCompany().getId()));
+
+        existing.setCompany(company);
         existing.setMainProcess(updatedData.getMainProcess());
-        existing.setDescription(updatedData.getDescription());
         existing.setPower(updatedData.getPower());
         existing.setSerial(updatedData.getSerial());
         existing.setBrand(updatedData.getBrand());
         existing.setLocation(updatedData.getLocation());
+
+        return processRepository.save(existing);
+    }
+
+    @Transactional
+    public void deleteProcess(String serviceRequest) {
+        if (!processRepository.existsById(serviceRequest)) {
+            throw new RuntimeException("No se puede eliminar: No se encontró ningún proceso con la solicitud " + serviceRequest);
+        }
+        processRepository.deleteById(serviceRequest);
+    }
+
+    // ==========================================
+    // GESTIÓN DE SERVICIOS (APUs INDIVIDUALES)
+    // ==========================================
+
+    @Transactional
+    public ProcessService createService(
+            String processServiceRequest,
+            ProcessService service,
+            List<ServiceMaterial> materials,
+            List<ServiceEquipment> equipments,
+            List<ServiceLabor> labors
+    ) {
+        Process parentProcess = processRepository.findById(processServiceRequest)
+                .orElseThrow(() -> new RuntimeException("No se encontró el proceso padre con la solicitud: " + processServiceRequest));
+
+        List<ServiceMaterial> safeMaterials = materials != null ? materials : Collections.emptyList();
+        List<ServiceEquipment> safeEquipments = equipments != null ? equipments : Collections.emptyList();
+        List<ServiceLabor> safeLabors = labors != null ? labors : Collections.emptyList();
+
+        service.setId(generateNextServiceId(processServiceRequest));
+        service.setProcess(parentProcess);
+
+        recalcularTotales(service, safeMaterials, safeEquipments, safeLabors);
+
+        service.setMaterials(safeMaterials);
+        service.setEquipments(safeEquipments);
+        service.setLabors(safeLabors);
+
+        return processServiceRepository.save(service);
+    }
+
+    public List<ProcessService> getServicesByProcess(String processServiceRequest) {
+        if (!processRepository.existsById(processServiceRequest)) {
+            throw new RuntimeException("No se encontró ningún proceso con la solicitud: " + processServiceRequest);
+        }
+        List<ProcessService> services = processServiceRepository.findByProcessServiceRequest(processServiceRequest);
+        sortServicesBySequence(services, processServiceRequest);
+        return services;
+    }
+
+    public ServiceResponseDTO getServiceById(String serviceId) {
+        ProcessService service = processServiceRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("No se encontró ningún servicio con el ID: " + serviceId));
+
+        List<ServiceMaterial> materials = serviceMaterialRepository.findByServiceId(serviceId);
+        List<ServiceEquipment> equipments = serviceEquipmentRepository.findByServiceId(serviceId);
+        List<ServiceLabor> labors = serviceLaborRepository.findByServiceId(serviceId);
+
+        BigDecimal totalMaterials = materials.stream()
+                .map(ServiceMaterial::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalEquipmentsDaily = equipments.stream()
+                .map(ServiceEquipment::getDailyUseCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalLaborsBase = labors.stream()
+                .map(ServiceLabor::getDailyCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal socialLawsCost = totalLaborsBase
+                .multiply(service.getSocialLawsPercentage())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal totalLaborsDaily = totalLaborsBase.add(socialLawsCost);
+
+        return new ServiceResponseDTO(
+                service.getProcess(),
+                service,
+                materials,
+                equipments,
+                labors,
+                totalMaterials,
+                totalEquipmentsDaily,
+                totalLaborsBase,
+                socialLawsCost,
+                totalLaborsDaily
+        );
+    }
+
+    @Transactional
+    public ProcessService updateService(
+            String serviceId,
+            ProcessService updatedData,
+            List<ServiceMaterial> newMaterials,
+            List<ServiceEquipment> newEquipments,
+            List<ServiceLabor> newLabors
+    ) {
+        ProcessService existing = processServiceRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("No se encontró el servicio con el ID: " + serviceId));
+
+        List<ServiceMaterial> safeMaterials = newMaterials != null ? newMaterials : Collections.emptyList();
+        List<ServiceEquipment> safeEquipments = newEquipments != null ? newEquipments : Collections.emptyList();
+        List<ServiceLabor> safeLabors = newLabors != null ? newLabors : Collections.emptyList();
+
+        existing.setDescription(updatedData.getDescription());
         existing.setItemQuantity(updatedData.getItemQuantity());
         existing.setPerformance(updatedData.getPerformance());
         existing.setSocialLawsPercentage(updatedData.getSocialLawsPercentage());
         existing.setAdminPercentage(updatedData.getAdminPercentage());
         existing.setUtilityContingencyPercentage(updatedData.getUtilityContingencyPercentage());
 
-        // 2. Limpiar listas anteriores (orphanRemoval eliminará los registros viejos)
         existing.getMaterials().clear();
         existing.getEquipments().clear();
         existing.getLabors().clear();
 
-        // 3. Recalcular todo y reasignar listas
-        recalcularTotales(existing, newMaterials, newEquipments, newLabors);
-        existing.getMaterials().addAll(newMaterials);
-        existing.getEquipments().addAll(newEquipments);
-        existing.getLabors().addAll(newLabors);
+        recalcularTotales(existing, safeMaterials, safeEquipments, safeLabors);
+        existing.getMaterials().addAll(safeMaterials);
+        existing.getEquipments().addAll(safeEquipments);
+        existing.getLabors().addAll(safeLabors);
 
-        return processRepository.save(existing);
+        return processServiceRepository.save(existing);
+    }
+
+    @Transactional
+    public void deleteService(String serviceId) {
+        ProcessService existing = processServiceRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("No se puede eliminar: No se encontró ningún servicio con el ID " + serviceId));
+
+        Process parent = existing.getProcess();
+        if (parent != null && parent.getServices() != null) {
+            parent.getServices().remove(existing);
+        }
+        processServiceRepository.delete(existing);
+    }
+
+    // ==========================================
+    // MOTOR DE CÁLCULO Y UTILIDADES DE SECUENCIA
+    // ==========================================
+
+    private String generateNextServiceId(String processServiceRequest) {
+        List<ProcessService> existingServices = processServiceRepository.findByProcessServiceRequest(processServiceRequest);
+        String prefix = processServiceRequest + "-";
+        int maxSuffix = -1;
+
+        for (ProcessService s : existingServices) {
+            int suffix = extractSequenceNumber(s.getId(), prefix);
+            if (suffix > maxSuffix) {
+                maxSuffix = suffix;
+            }
+        }
+
+        return prefix + (maxSuffix + 1);
+    }
+
+    private void sortServicesBySequence(List<ProcessService> services, String processServiceRequest) {
+        if (services == null || services.isEmpty()) return;
+        String prefix = processServiceRequest + "-";
+        services.sort(Comparator.comparingInt(s -> extractSequenceNumber(s.getId(), prefix)));
+    }
+
+    private int extractSequenceNumber(String serviceId, String prefix) {
+        if (serviceId == null || !serviceId.startsWith(prefix)) {
+            return Integer.MAX_VALUE;
+        }
+        try {
+            return Integer.parseInt(serviceId.substring(prefix.length()));
+        } catch (NumberFormatException e) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private void recalcularTotales(
+            ProcessService service,
+            List<ServiceMaterial> materials,
+            List<ServiceEquipment> equipments,
+            List<ServiceLabor> labors
+    ) {
+        if (service.getPerformance() == null || service.getPerformance().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("El rendimiento del servicio debe ser mayor a cero para poder calcular los costos.");
+        }
+
+        // CALCULO DE MATERIALES
+        BigDecimal totalMateriales = BigDecimal.ZERO;
+        for (ServiceMaterial sm : materials) {
+            Material catMat = materialRepository.findById(sm.getMaterial().getId())
+                    .orElseThrow(() -> new RuntimeException("Material no encontrado: " + sm.getMaterial().getId()));
+
+            sm.setDescriptionSnapshot(catMat.getDescription());
+            sm.setUnitSnapshot(catMat.getUnit());
+            sm.setCostApplied(catMat.getBaseCost());
+
+            BigDecimal amount = sm.getCostApplied().multiply(sm.getQuantity()).setScale(2, RoundingMode.HALF_UP);
+            sm.setAmount(amount);
+            sm.setService(service);
+
+            totalMateriales = totalMateriales.add(amount);
+        }
+
+        BigDecimal materialUnitCost = totalMateriales.multiply(service.getItemQuantity()).setScale(2, RoundingMode.HALF_UP);
+        service.setMaterialUnitCost(materialUnitCost);
+
+        // CALCULO DE EQUIPOS
+        BigDecimal totalEquipos = BigDecimal.ZERO;
+        for (ServiceEquipment se : equipments) {
+            Equipment catEq = equipmentRepository.findById(se.getEquipment().getId())
+                    .orElseThrow(() -> new RuntimeException("Equipo no encontrado: " + se.getEquipment().getId()));
+
+            se.setDescriptionSnapshot(catEq.getDescription());
+            se.setValueApplied(catEq.getBaseValue());
+            se.setDepreciationFactorApplied(catEq.getDepreciationFactor());
+
+            BigDecimal dailyUseCost = se.getValueApplied().multiply(se.getDepreciationFactorApplied().setScale(6, RoundingMode.HALF_UP));
+            se.setDailyUseCost(dailyUseCost);
+            se.setService(service);
+
+            totalEquipos = totalEquipos.add(dailyUseCost);
+        }
+
+        BigDecimal equipmentUnitCost = totalEquipos.divide(service.getPerformance(), 2, RoundingMode.HALF_UP);
+        service.setEquipmentUnitCost(equipmentUnitCost);
+
+        // CALCULO DE MANO DE OBRA
+        BigDecimal totalEnMano = BigDecimal.ZERO;
+        for (ServiceLabor sl : labors) {
+            Labor catLab = laborRepository.findById(sl.getLabor().getId())
+                    .orElseThrow(() -> new RuntimeException("Mano de Obra no encontrada: " + sl.getLabor().getId()));
+
+            sl.setDescriptionSnapshot(catLab.getDescription());
+            sl.setDailyWageApplied(catLab.getBaseDailyWage());
+
+            BigDecimal dailyCost = sl.getDailyWageApplied().multiply(sl.getDotation()).setScale(2, RoundingMode.HALF_UP);
+            sl.setDailyCost(dailyCost);
+            sl.setService(service);
+
+            totalEnMano = totalEnMano.add(dailyCost);
+        }
+
+        BigDecimal costoLeyesSociales = totalEnMano.multiply(service.getSocialLawsPercentage());
+        BigDecimal costoDiarioPersonal = totalEnMano.add(costoLeyesSociales);
+
+        BigDecimal laborUnitCost = costoDiarioPersonal.divide(service.getPerformance(), 2, RoundingMode.HALF_UP);
+        service.setLaborUnitCost(laborUnitCost);
+
+        // TOTALES GENERALES DEL SERVICIO
+        BigDecimal directUnitCost = materialUnitCost.add(equipmentUnitCost).add(laborUnitCost);
+        service.setDirectUnitCost(directUnitCost);
+
+        BigDecimal adminCostValue = directUnitCost.multiply(service.getAdminPercentage()).setScale(2, RoundingMode.HALF_UP);
+        service.setAdminCostValue(adminCostValue);
+
+        BigDecimal totalUnitCost = directUnitCost.add(adminCostValue);
+        service.setTotalUnitCost(totalUnitCost);
+
+        BigDecimal utilityCostValue = totalUnitCost.multiply(service.getUtilityContingencyPercentage()).setScale(2, RoundingMode.HALF_UP);
+        service.setUtilityCostValue(utilityCostValue);
+
+        BigDecimal calculatedUnitPrice = totalUnitCost.add(utilityCostValue);
+        service.setCalculatedUnitPrice(calculatedUnitPrice);
+
+        service.setProposedUnitPrice(calculatedUnitPrice.setScale(0, RoundingMode.HALF_UP).intValue());
     }
 }

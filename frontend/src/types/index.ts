@@ -27,9 +27,9 @@ export interface Labor {
 }
 
 // ==========================================
-// DETALLES DEL PROCESO (SNAPSHOTS)
+// DETALLES DEL SERVICIO (SNAPSHOTS)
 // ==========================================
-export interface ProcessMaterial {
+export interface ServiceMaterial {
     id: string;
     material: Material;
     descriptionSnapshot: string;
@@ -39,7 +39,7 @@ export interface ProcessMaterial {
     amount: number;
 }
 
-export interface ProcessEquipment {
+export interface ServiceEquipment {
     id: string;
     equipment: Equipment;
     descriptionSnapshot: string;
@@ -49,7 +49,7 @@ export interface ProcessEquipment {
     dailyUseCost: number;
 }
 
-export interface ProcessLabor {
+export interface ServiceLabor {
     id: string;
     labor: Labor;
     descriptionSnapshot: string;
@@ -59,26 +59,20 @@ export interface ProcessLabor {
 }
 
 // ==========================================
-// CABECERA DEL APU (PROCESO)
+// SERVICIO INDIVIDUAL (APU DE UNA OBRA)
 // ==========================================
-export interface Process {
-    serviceRequest: string;
-    company: Company;
-    mainProcess: string;
+export interface ProcessService {
+    id: string; // Ej: SR-2026-001-0
     description: string;
-    power?: string;    // Opcional
-    serial?: string;   // Opcional
-    brand?: string;    // Opcional
-    location?: string;
-    
+
     // Variables de Cálculo
     itemQuantity: number;
     performance: number;
     socialLawsPercentage: number;
     adminPercentage: number;
     utilityContingencyPercentage: number;
-    
-    // Totales
+
+    // Totales Calculados
     materialUnitCost: number;
     equipmentUnitCost: number;
     laborUnitCost: number;
@@ -91,13 +85,58 @@ export interface Process {
 }
 
 // ==========================================
-// DTO DE RESPUESTA COMPLETA (Para el endpoint GET)
+// CABECERA DEL PROCESO (OBRA COMPLETA)
 // ==========================================
-export interface ApuResponseDTO {
+export interface Process {
+    serviceRequest: string;
+    company: Company;
+    mainProcess: string;
+    power?: string;
+    serial?: string;
+    brand?: string;
+    location?: string;
+    services?: ProcessService[];
+}
+
+// ==========================================
+// DTOs DE PETICIÓN Y RESPUESTA
+// ==========================================
+export interface ProcessRequestDTO {
+    serviceRequest: string;
+    companyId: string;
+    mainProcess: string;
+    power?: string;
+    serial?: string;
+    brand?: string;
+    location?: string;
+}
+
+export interface ProcessResponseDTO {
     process: Process;
-    materials: ProcessMaterial[];
-    equipments: ProcessEquipment[];
-    labors: ProcessLabor[];
+    services: ProcessService[];
+    servicesCount: number;
+    totalCalculatedPrice: number;
+    totalProposedPrice: number;
+}
+
+export interface ServiceRequestDTO {
+    description: string;
+    itemQuantity: number;
+    performance: number;
+    socialLawsPercentage: number;
+    adminPercentage: number;
+    utilityContingencyPercentage: number;
+    materials: { materialId: string; quantity: number }[];
+    equipments: { equipmentId: string; quantity: number }[];
+    labors: { laborId: string; dotation: number }[];
+}
+
+export interface ServiceResponseDTO {
+    process: Process;
+    service: ProcessService;
+    materials: ServiceMaterial[];
+    equipments: ServiceEquipment[];
+    labors: ServiceLabor[];
     totalMaterials: number;
     totalEquipmentsDaily: number;
     totalLaborsBase: number;

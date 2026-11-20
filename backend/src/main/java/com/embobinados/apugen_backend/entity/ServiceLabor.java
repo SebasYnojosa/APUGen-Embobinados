@@ -4,25 +4,29 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "process_labors")
+@Table(name = "service_labors")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProcessLabor {
+public class ServiceLabor {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "process_service_request", nullable = false)
-    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
-    private Process process;
+    @JoinColumn(name = "service_id", nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private ProcessService service;
 
-    // Referencia al catálogo maestro
     @ManyToOne
     @JoinColumn(name = "labor_id", nullable = false)
     private Labor labor;
@@ -34,7 +38,6 @@ public class ProcessLabor {
     @Column(name = "daily_wage_applied", precision = 12, scale = 2, nullable = false)
     private BigDecimal dailyWageApplied;
 
-    // Variables del proceso
     @Column(precision = 5, scale = 2, nullable = false)
     private BigDecimal dotation; // Porcentaje (Ej: 1.00 para 100%)
 

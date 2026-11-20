@@ -4,25 +4,29 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "process_equipments")
+@Table(name = "service_equipments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProcessEquipment {
+public class ServiceEquipment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "process_service_request", nullable = false)
-    @JsonIgnore // Para que no salga toda la informacion del proceso en las responses
-    private Process process;
+    @JoinColumn(name = "service_id", nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private ProcessService service;
 
-    // Referencia al catálogo maestro
     @ManyToOne
     @JoinColumn(name = "equipment_id", nullable = false)
     private Equipment equipment;
@@ -37,7 +41,6 @@ public class ProcessEquipment {
     @Column(name = "depreciation_factor_applied", precision = 12, scale = 5, nullable = false)
     private BigDecimal depreciationFactorApplied;
 
-    // Variables del proceso
     @Column(precision = 12, scale = 2, nullable = false)
     private BigDecimal quantity;
 

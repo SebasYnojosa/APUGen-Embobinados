@@ -1,34 +1,27 @@
 package com.embobinados.apugen_backend.dto;
 
 import lombok.Data;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class ApuRequestDTO {
-    // Cabecera
-    private String serviceRequest;
-    private String companyId;
-    private String mainProcess;
+public class ServiceRequestDTO {
     private String description;
-    private String power;
-    private String serial;
-    private String brand;
-    private String location;
 
-    // Variables del proceso
+    // Variables de cálculo del servicio
     private BigDecimal itemQuantity;
     private BigDecimal performance;
     private BigDecimal socialLawsPercentage;
     private BigDecimal adminPercentage;
     private BigDecimal utilityContingencyPercentage;
 
-    // Listas de detalles
-    private List<MaterialDTO> materials;
-    private List<EquipmentDTO> equipments;
-    private List<LaborDTO> labors;
+    // Listas de recursos del servicio
+    private List<MaterialDTO> materials = new ArrayList<>();
+    private List<EquipmentDTO> equipments = new ArrayList<>();
+    private List<LaborDTO> labors = new ArrayList<>();
 
-    // Clases anidadas para estructurar las listas del JSON
     @Data
     public static class MaterialDTO {
         private String materialId;

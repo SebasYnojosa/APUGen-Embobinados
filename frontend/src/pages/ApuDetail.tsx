@@ -1,33 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
-import type { ApuResponseDTO } from '../types';
+import type { ServiceResponseDTO } from '../types';
 
 export default function ApuDetail() {
     const [searchParams] = useSearchParams();
-    const serviceRequest = searchParams.get('serviceRequest');
+    const serviceId = searchParams.get('serviceId');
     const navigate = useNavigate();
 
-    const [data, setData] = useState<ApuResponseDTO | null>(null);
+    const [data, setData] = useState<ServiceResponseDTO | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchApu = async () => {
+        const fetchService = async () => {
             try {
                 setLoading(true);
-                if (serviceRequest) {
-                    const response = await apuService.getApuByServiceRequest(serviceRequest);
+                if (serviceId) {
+                    const response = await apuService.getServiceById(serviceId);
                     setData(response);
+                } else {
+                    setError('No se especificó el ID del servicio.');
                 }
             } catch (err: any) {
-                setError(err.response?.data?.message || 'Error al cargar los detalles del APU.');
+                setError(err.response?.data?.message || 'Error al cargar los detalles del servicio.');
             } finally {
                 setLoading(false);
             }
         };
-        fetchApu();
-    }, [serviceRequest]);
+        fetchService();
+    }, [serviceId]);
 
     if (loading) {
         return (
@@ -40,7 +42,7 @@ export default function ApuDetail() {
     if (error || !data) {
         return (
             <div className="max-w-4xl mx-auto mt-8 alert alert-error shadow-lg">
-                <span>{error || 'APU no encontrado'}</span>
+                <span>{error || 'Servicio no encontrado'}</span>
                 <button className="btn btn-sm" onClick={() => navigate('/apus')}>Volver al inicio</button>
             </div>
         );
@@ -48,6 +50,7 @@ export default function ApuDetail() {
 
     const {
         process,
+        service,
         materials,
         equipments,
         labors,
@@ -55,31 +58,41 @@ export default function ApuDetail() {
         totalEquipmentsDaily,
         totalLaborsBase,
         socialLawsCost,
-        totalLaborsDaily
+        totalLaborsDaily,
     } = data;
 
-    // Funciones auxiliares para formato visual
-    const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const formatPercent = (dec: number) => `${(dec * 100).toFixed(0)}%`;
+    const formatCurrency = (amount: number) =>
+        `$${(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatPercent = (dec: number) => `${((dec || 0) * 100).toFixed(0)}%`;
 
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-6">
             {/* ENCABEZADO Y ACCIONES */}
-            <div className="flex justify-between items-center bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none print:border-none">
+            <div className="flex flex-wrap justify-between items-center gap-4 bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none print:border-none">
                 <div>
-                    <div className="badge badge-primary mb-2 font-bold print:hidden">APU Válido</div>
-                    <h1 className="text-3xl font-bold">{process.serviceRequest}</h1>
-                    <p className="text-base-content/70 text-lg">{process.mainProcess} - <span className="font-semibold text-base-content">{process.company?.name}</span></p>
+                    <div className="badge badge-primary mb-2 font-bold print:hidden">APU Servicio</div>
+                    <h1 className="text-3xl font-bold">{service.id}</h1>
+                    <p className="text-lg font-semibold mt-1">{service.description}</p>
+                    <p className="text-base-content/70 text-sm">
+                        Obra: <span className="font-semibold text-base-content">{process.serviceRequest}</span> — {process.mainProcess} (<span className="font-semibold text-base-content">{process.company?.name}</span>)
+                    </p>
                 </div>
                 <div className="space-x-2 print:hidden">
-                    <button className="btn btn-outline" onClick={() => navigate('/apus')}>Volver</button>
                     <button
-                        className="btn btn-warning btn-outline"
-                        onClick={() => navigate(`/apus/editar?serviceRequest=${encodeURIComponent(process.serviceRequest)}`)}
+                        className="btn btn-outline btn-sm"
+                        onClick={() => navigate(`/apus/detalle?serviceRequest=${encodeURIComponent(process.serviceRequest)}`)}
                     >
-                        Editar
+                        Volver a la Obra
                     </button>
-                    <button className="btn btn-primary" onClick={() => window.print()}>🖨️ Imprimir / PDF</button>
+                    <button
+                        className="btn btn-warning btn-outline btn-sm"
+                        onClick={() => navigate(`/apus/servicio/editar?serviceId=${encodeURIComponent(service.id)}`)}
+                    >
+                        Editar Servicio
+                    </button>
+                    <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
+                        🖨️ Imprimir / PDF
+                    </button>
                 </div>
             </div>
 
@@ -88,7 +101,7 @@ export default function ApuDetail() {
                 <div className="bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none">
                     <h3 className="text-lg font-bold mb-4 border-b pb-2">Especificaciones del Equipo</h3>
                     <ul className="space-y-2 text-sm">
-                        <li><span className="font-semibold inline-block w-24">Descripción:</span> {process.description}</li>
+                        <li><span className="font-semibold inline-block w-24">Obra:</span> {process.serviceRequest}</li>
                         <li><span className="font-semibold inline-block w-24">Potencia:</span> {process.power || 'N/A'}</li>
                         <li><span className="font-semibold inline-block w-24">Serial:</span> {process.serial || 'N/A'}</li>
                         <li><span className="font-semibold inline-block w-24">Marca:</span> {process.brand || 'N/A'}</li>
@@ -96,13 +109,13 @@ export default function ApuDetail() {
                     </ul>
                 </div>
                 <div className="bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none">
-                    <h3 className="text-lg font-bold mb-4 border-b pb-2">Variables de Cálculo</h3>
+                    <h3 className="text-lg font-bold mb-4 border-b pb-2">Variables de Cálculo del Servicio</h3>
                     <ul className="space-y-2 text-sm">
-                        <li><span className="font-semibold inline-block w-40">Cantidad del Ítem:</span> {process.itemQuantity}</li>
-                        <li><span className="font-semibold inline-block w-40 text-primary">Rendimiento:</span> <span className="font-bold text-primary">{process.performance}</span></li>
-                        <li><span className="font-semibold inline-block w-40">Leyes Sociales:</span> {formatPercent(process.socialLawsPercentage)}</li>
-                        <li><span className="font-semibold inline-block w-40">Administración:</span> {formatPercent(process.adminPercentage)}</li>
-                        <li><span className="font-semibold inline-block w-40">Utilidad e Imprev.:</span> {formatPercent(process.utilityContingencyPercentage)}</li>
+                        <li><span className="font-semibold inline-block w-40">Cantidad del Ítem:</span> {service.itemQuantity}</li>
+                        <li><span className="font-semibold inline-block w-40 text-primary">Rendimiento:</span> <span className="font-bold text-primary">{service.performance}</span></li>
+                        <li><span className="font-semibold inline-block w-40">Leyes Sociales:</span> {formatPercent(service.socialLawsPercentage)}</li>
+                        <li><span className="font-semibold inline-block w-40">Administración:</span> {formatPercent(service.adminPercentage)}</li>
+                        <li><span className="font-semibold inline-block w-40">Utilidad e Imprev.:</span> {formatPercent(service.utilityContingencyPercentage)}</li>
                     </ul>
                 </div>
             </div>
@@ -115,7 +128,7 @@ export default function ApuDetail() {
                     <h3 className="text-lg font-bold mb-3 flex items-center justify-between border-b pb-2">
                         <span><span className="print:hidden">🔧</span> Materiales</span>
                         <span className="text-sm font-normal text-base-content/70">
-                            Costo Unitario: <strong className="text-primary font-mono text-base">{formatCurrency(process.materialUnitCost)}</strong>
+                            Costo Unitario: <strong className="text-primary font-mono text-base">{formatCurrency(service.materialUnitCost)}</strong>
                         </span>
                     </h3>
                     <div className="overflow-x-auto">
@@ -144,8 +157,8 @@ export default function ApuDetail() {
                                 <td className="text-right font-mono">{formatCurrency(totalMaterials)}</td>
                             </tr>
                             <tr className="text-primary">
-                                <td colSpan={5} className="text-right">Costo Unitario Materiales (Total × Cant. Ítem {process.itemQuantity}):</td>
-                                <td className="text-right font-mono">{formatCurrency(process.materialUnitCost)}</td>
+                                <td colSpan={5} className="text-right">Costo Unitario Materiales (Total × Cant. Ítem {service.itemQuantity}):</td>
+                                <td className="text-right font-mono">{formatCurrency(service.materialUnitCost)}</td>
                             </tr>
                             </tfoot>
                         </table>
@@ -157,7 +170,7 @@ export default function ApuDetail() {
                     <h3 className="text-lg font-bold mb-3 flex items-center justify-between border-b pb-2">
                         <span><span className="print:hidden">⚙️</span> Equipos</span>
                         <span className="text-sm font-normal text-base-content/70">
-                            Costo Unitario: <strong className="text-primary font-mono text-base">{formatCurrency(process.equipmentUnitCost)}</strong>
+                            Costo Unitario: <strong className="text-primary font-mono text-base">{formatCurrency(service.equipmentUnitCost)}</strong>
                         </span>
                     </h3>
                     <div className="overflow-x-auto">
@@ -186,8 +199,8 @@ export default function ApuDetail() {
                                 <td className="text-right font-mono">{formatCurrency(totalEquipmentsDaily)}</td>
                             </tr>
                             <tr className="text-primary">
-                                <td colSpan={5} className="text-right">Costo Unitario Equipos (Total Diario ÷ Rendimiento {process.performance}):</td>
-                                <td className="text-right font-mono">{formatCurrency(process.equipmentUnitCost)}</td>
+                                <td colSpan={5} className="text-right">Costo Unitario Equipos (Total Diario ÷ Rendimiento {service.performance}):</td>
+                                <td className="text-right font-mono">{formatCurrency(service.equipmentUnitCost)}</td>
                             </tr>
                             </tfoot>
                         </table>
@@ -199,7 +212,7 @@ export default function ApuDetail() {
                     <h3 className="text-lg font-bold mb-3 flex items-center justify-between border-b pb-2">
                         <span><span className="print:hidden">👷</span> Mano de Obra</span>
                         <span className="text-sm font-normal text-base-content/70">
-                            Costo Unitario: <strong className="text-primary font-mono text-base">{formatCurrency(process.laborUnitCost)}</strong>
+                            Costo Unitario: <strong className="text-primary font-mono text-base">{formatCurrency(service.laborUnitCost)}</strong>
                         </span>
                     </h3>
                     <div className="overflow-x-auto">
@@ -227,7 +240,7 @@ export default function ApuDetail() {
                                 <td className="text-right font-mono">{formatCurrency(totalLaborsBase)}</td>
                             </tr>
                             <tr>
-                                <td colSpan={4} className="text-right">Leyes Sociales ({formatPercent(process.socialLawsPercentage)}):</td>
+                                <td colSpan={4} className="text-right">Leyes Sociales ({formatPercent(service.socialLawsPercentage)}):</td>
                                 <td className="text-right font-mono">{formatCurrency(socialLawsCost)}</td>
                             </tr>
                             <tr>
@@ -235,8 +248,8 @@ export default function ApuDetail() {
                                 <td className="text-right font-mono">{formatCurrency(totalLaborsDaily)}</td>
                             </tr>
                             <tr className="text-primary">
-                                <td colSpan={4} className="text-right">Costo Unitario Mano de Obra (Total Diario ÷ Rendimiento {process.performance}):</td>
-                                <td className="text-right font-mono">{formatCurrency(process.laborUnitCost)}</td>
+                                <td colSpan={4} className="text-right">Costo Unitario Mano de Obra (Total Diario ÷ Rendimiento {service.performance}):</td>
+                                <td className="text-right font-mono">{formatCurrency(service.laborUnitCost)}</td>
                             </tr>
                             </tfoot>
                         </table>
@@ -248,23 +261,23 @@ export default function ApuDetail() {
             <div className="stats stats-vertical lg:stats-horizontal shadow w-full border border-base-200 print:shadow-none print:border-black">
                 <div className="stat">
                     <div className="stat-title text-base-content/70">Costo Directo Unitario</div>
-                    <div className="stat-value text-xl font-mono">{formatCurrency(process.directUnitCost)}</div>
+                    <div className="stat-value text-xl font-mono">{formatCurrency(service.directUnitCost)}</div>
                     <div className="stat-desc">Suma de Mat + Eq + MO</div>
                 </div>
                 <div className="stat">
-                    <div className="stat-title text-base-content/70">Administración ({formatPercent(process.adminPercentage)})</div>
-                    <div className="stat-value text-xl font-mono">{formatCurrency(process.adminCostValue)}</div>
+                    <div className="stat-title text-base-content/70">Administración ({formatPercent(service.adminPercentage)})</div>
+                    <div className="stat-value text-xl font-mono">{formatCurrency(service.adminCostValue)}</div>
                     <div className="stat-desc">Sobre el Costo Directo</div>
                 </div>
                 <div className="stat">
-                    <div className="stat-title text-base-content/70">Utilidad e Imp. ({formatPercent(process.utilityContingencyPercentage)})</div>
-                    <div className="stat-value text-xl font-mono">{formatCurrency(process.utilityCostValue)}</div>
+                    <div className="stat-title text-base-content/70">Utilidad e Imp. ({formatPercent(service.utilityContingencyPercentage)})</div>
+                    <div className="stat-value text-xl font-mono">{formatCurrency(service.utilityCostValue)}</div>
                     <div className="stat-desc">Sobre Costo + Admin</div>
                 </div>
                 <div className="stat bg-primary text-primary-content print:bg-transparent print:text-black">
                     <div className="stat-title text-primary-content/80 print:text-black font-bold">Precio Unitario Propuesto</div>
-                    <div className="stat-value text-3xl">${process.proposedUnitPrice.toLocaleString('en-US')}</div>
-                    <div className="stat-desc text-primary-content/80 print:text-black">Calculado real: {formatCurrency(process.calculatedUnitPrice)}</div>
+                    <div className="stat-value text-3xl">${service.proposedUnitPrice.toLocaleString('en-US')}</div>
+                    <div className="stat-desc text-primary-content/80 print:text-black">Calculado real: {formatCurrency(service.calculatedUnitPrice)}</div>
                 </div>
             </div>
         </div>

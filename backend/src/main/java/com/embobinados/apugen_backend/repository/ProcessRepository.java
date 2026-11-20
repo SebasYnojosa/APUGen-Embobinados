@@ -12,11 +12,15 @@ import java.util.List;
 public interface ProcessRepository extends JpaRepository<Process, String> {
 
     @Query("""
-    SELECT p FROM Process p 
+    SELECT p FROM Process p
     WHERE (:companyId IS NULL OR normalizar(cast(p.company.id as String)) LIKE normalizar(cast(:companyId as String)))
       AND (:companyName IS NULL OR normalizar(p.company.name) LIKE normalizar(cast(:companyName as String)))
       AND (:mainProcess IS NULL OR normalizar(p.mainProcess) LIKE normalizar(cast(:mainProcess as String)))
-      AND (:description IS NULL OR normalizar(p.description) LIKE normalizar(cast(:description as String)))
+      AND (:description IS NULL OR EXISTS (
+          SELECT s FROM ProcessService s
+          WHERE s.process = p
+            AND normalizar(s.description) LIKE normalizar(cast(:description as String))
+      ))
       AND (:power IS NULL OR normalizar(p.power) LIKE normalizar(cast(:power as String)))
       AND (:serial IS NULL OR normalizar(p.serial) LIKE normalizar(cast(:serial as String)))
       AND (:brand IS NULL OR normalizar(p.brand) LIKE normalizar(cast(:brand as String)))

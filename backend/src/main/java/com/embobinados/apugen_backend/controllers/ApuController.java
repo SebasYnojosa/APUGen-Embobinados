@@ -1,7 +1,9 @@
 package com.embobinados.apugen_backend.controllers;
 
-import com.embobinados.apugen_backend.dto.ApuRequestDTO;
-import com.embobinados.apugen_backend.dto.ApuResponseDTO;
+import com.embobinados.apugen_backend.dto.ProcessRequestDTO;
+import com.embobinados.apugen_backend.dto.ProcessResponseDTO;
+import com.embobinados.apugen_backend.dto.ServiceRequestDTO;
+import com.embobinados.apugen_backend.dto.ServiceResponseDTO;
 import com.embobinados.apugen_backend.entity.*;
 import com.embobinados.apugen_backend.entity.Process;
 import com.embobinados.apugen_backend.service.ApuService;
@@ -9,93 +11,44 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/apus")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Permite que el frontend en React (puerto 5173) se comunique sin bloqueos CORS
+@CrossOrigin(origins = "*")
 public class ApuController {
 
     private final ApuService apuService;
 
-    @PostMapping("/generar")
-    public ResponseEntity<Process> generarApu(@RequestBody ApuRequestDTO dto) {
+    // ==========================================
+    // ENDPOINTS DE PROCESOS (OBRAS)
+    // ==========================================
 
-        // 1. Mapear la cabecera (Process)
-        Process process = new Process();
+    @PostMapping
+    public ResponseEntity<Process> crearProceso(@RequestBody ProcessRequestDTO dto) {
+        Process process = mapProcessDto(dto);
         process.setServiceRequest(dto.getServiceRequest());
-        process.setMainProcess(dto.getMainProcess());
-        process.setDescription(dto.getDescription());
-        process.setPower(dto.getPower());
-        process.setSerial(dto.getSerial());
-        process.setBrand(dto.getBrand());
-        process.setLocation(dto.getLocation());
-        process.setItemQuantity(dto.getItemQuantity());
-        process.setPerformance(dto.getPerformance());
-        process.setSocialLawsPercentage(dto.getSocialLawsPercentage());
-        process.setAdminPercentage(dto.getAdminPercentage());
-        process.setUtilityContingencyPercentage(dto.getUtilityContingencyPercentage());
-
-        // Truco JPA: Para guardar relaciones, solo necesitamos instanciar la entidad con su ID
-        Company company = new Company();
-        company.setId(dto.getCompanyId());
-        process.setCompany(company);
-
-        // 2. Mapear la lista de Materiales
-        List<ProcessMaterial> materials = dto.getMaterials().stream().map(mDto -> {
-            ProcessMaterial pm = new ProcessMaterial();
-            Material material = new Material();
-            material.setId(mDto.getMaterialId());
-            pm.setMaterial(material);
-            pm.setQuantity(mDto.getQuantity());
-            return pm;
-        }).collect(Collectors.toList());
-
-        // 3. Mapear la lista de Equipos
-        List<ProcessEquipment> equipments = dto.getEquipments().stream().map(eDto -> {
-            ProcessEquipment pe = new ProcessEquipment();
-            Equipment equipment = new Equipment();
-            equipment.setId(eDto.getEquipmentId());
-            pe.setEquipment(equipment);
-            pe.setQuantity(eDto.getQuantity());
-            return pe;
-        }).collect(Collectors.toList());
-
-        // 4. Mapear la lista de Mano de Obra
-        List<ProcessLabor> labors = dto.getLabors().stream().map(lDto -> {
-            ProcessLabor pl = new ProcessLabor();
-            Labor labor = new Labor();
-            labor.setId(lDto.getLaborId());
-            pl.setLabor(labor);
-            pl.setDotation(lDto.getDotation());
-            return pl;
-        }).collect(Collectors.toList());
-
-        // 5. Ejecutar el cálculo y guardar
-        Process savedProcess = apuService.calcAndSaveApu(process, materials, equipments, labors);
-
-        // Devolvemos el APU calculado y guardado con un código HTTP 200 (OK)
+        Process savedProcess = apuService.createProcess(process);
         return ResponseEntity.ok(savedProcess);
     }
 
     @GetMapping
-    public ResponseEntity<List<Process>> listarTodosLosApus() {
-        List<Process> apus = apuService.getAllApus();
-        return ResponseEntity.ok(apus);
+    public ResponseEntity<List<Process>> listarTodosLosProcesos() {
+        return ResponseEntity.ok(apuService.getAllProcesses());
     }
 
     @GetMapping("/porOrden")
-    public ResponseEntity<ApuResponseDTO> buscarApuPorOrdenServicio(
+    public ResponseEntity<ProcessResponseDTO> buscarProcesoPorOrdenServicio(
             @RequestParam("serviceRequest") String serviceRequest
     ) {
-        ApuResponseDTO apu = apuService.getApuByServiceRequest(serviceRequest);
-        return ResponseEntity.ok(apu);
+        return ResponseEntity.ok(apuService.getProcessByServiceRequest(serviceRequest));
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<Process>> buscarApus(
+    public ResponseEntity<List<Process>> buscarProcesos(
             @RequestParam(required = false) String companyId,
             @RequestParam(required = false) String companyName,
             @RequestParam(required = false) String mainProcess,
@@ -104,73 +57,147 @@ public class ApuController {
             @RequestParam(required = false) String serial,
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "false") boolean exactMatch) {
-
-        List<Process> resultados = apuService.searchApus(
-                companyId, companyName, mainProcess, description, power, serial, brand, location, exactMatch);
-
+            @RequestParam(defaultValue = "false") boolean exactMatch
+    ) {
+        List<Process> resultados = apuService.searchProcesses(
+                companyId, companyName, mainProcess, description, power, serial, brand, location, exactMatch
+        );
         return ResponseEntity.ok(resultados);
     }
 
-    // @DeleteMapping("/{serviceRequest}")
+    @PutMapping
+    public ResponseEntity<Process> actualizarProceso(
+            @RequestParam("serviceRequest") String serviceRequest,
+            @RequestBody ProcessRequestDTO dto
+    ) {
+        Process processData = mapProcessDto(dto);
+        return ResponseEntity.ok(apuService.updateProcess(serviceRequest, processData));
+    }
+
     @DeleteMapping
-    public ResponseEntity<Void> eliminarApu(
+    public ResponseEntity<Void> eliminarProceso(
             @RequestParam("serviceRequest") String serviceRequest
     ) {
-        apuService.deleteApu(serviceRequest);
+        apuService.deleteProcess(serviceRequest);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping
-    public ResponseEntity<Process> actualizarApu(
-            @RequestParam("serviceRequest") String serviceRequest,
-            @RequestBody ApuRequestDTO dto
+    // ==========================================
+    // ENDPOINTS DE SERVICIOS (APUs INDIVIDUALES)
+    // ==========================================
+
+    @GetMapping("/servicios")
+    public ResponseEntity<List<ProcessService>> listarServiciosDelProceso(
+            @RequestParam("serviceRequest") String serviceRequest
     ) {
-        Process processData = new Process();
-        processData.setMainProcess(dto.getMainProcess());
-        processData.setDescription(dto.getDescription());
-        processData.setPower(dto.getPower());
-        processData.setSerial(dto.getSerial());
-        processData.setBrand(dto.getBrand());
-        processData.setLocation(dto.getLocation());
-        processData.setItemQuantity(dto.getItemQuantity());
-        processData.setPerformance(dto.getPerformance());
-        processData.setSocialLawsPercentage(dto.getSocialLawsPercentage());
-        processData.setAdminPercentage(dto.getAdminPercentage());
-        processData.setUtilityContingencyPercentage(dto.getUtilityContingencyPercentage());
+        return ResponseEntity.ok(apuService.getServicesByProcess(serviceRequest));
+    }
+
+    @GetMapping("/servicios/porId")
+    public ResponseEntity<ServiceResponseDTO> obtenerDetalleServicio(
+            @RequestParam("serviceId") String serviceId
+    ) {
+        return ResponseEntity.ok(apuService.getServiceById(serviceId));
+    }
+
+    @PostMapping("/servicios")
+    public ResponseEntity<ProcessService> crearServicio(
+            @RequestParam("serviceRequest") String serviceRequest,
+            @RequestBody ServiceRequestDTO dto
+    ) {
+        ProcessService service = mapServiceDto(dto);
+        List<ServiceMaterial> materials = mapMaterials(dto);
+        List<ServiceEquipment> equipments = mapEquipments(dto);
+        List<ServiceLabor> labors = mapLabors(dto);
+
+        ProcessService saved = apuService.createService(serviceRequest, service, materials, equipments, labors);
+        return ResponseEntity.ok(saved);
+    }
+
+    @PutMapping("/servicios")
+    public ResponseEntity<ProcessService> actualizarServicio(
+            @RequestParam("serviceId") String serviceId,
+            @RequestBody ServiceRequestDTO dto
+    ) {
+        ProcessService serviceData = mapServiceDto(dto);
+        List<ServiceMaterial> materials = mapMaterials(dto);
+        List<ServiceEquipment> equipments = mapEquipments(dto);
+        List<ServiceLabor> labors = mapLabors(dto);
+
+        ProcessService updated = apuService.updateService(serviceId, serviceData, materials, equipments, labors);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/servicios")
+    public ResponseEntity<Void> eliminarServicio(
+            @RequestParam("serviceId") String serviceId
+    ) {
+        apuService.deleteService(serviceId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==========================================
+    // MAPPERS INTERNOS
+    // ==========================================
+
+    private Process mapProcessDto(ProcessRequestDTO dto) {
+        Process process = new Process();
+        process.setMainProcess(dto.getMainProcess());
+        process.setPower(dto.getPower());
+        process.setSerial(dto.getSerial());
+        process.setBrand(dto.getBrand());
+        process.setLocation(dto.getLocation());
 
         Company company = new Company();
         company.setId(dto.getCompanyId());
-        processData.setCompany(company);
+        process.setCompany(company);
+        return process;
+    }
 
-        List<ProcessMaterial> materials = dto.getMaterials().stream().map(mDto -> {
-            ProcessMaterial pm = new ProcessMaterial();
+    private ProcessService mapServiceDto(ServiceRequestDTO dto) {
+        ProcessService service = new ProcessService();
+        service.setDescription(dto.getDescription());
+        service.setItemQuantity(dto.getItemQuantity());
+        service.setPerformance(dto.getPerformance());
+        service.setSocialLawsPercentage(dto.getSocialLawsPercentage());
+        service.setAdminPercentage(dto.getAdminPercentage());
+        service.setUtilityContingencyPercentage(dto.getUtilityContingencyPercentage());
+        return service;
+    }
+
+    private List<ServiceMaterial> mapMaterials(ServiceRequestDTO dto) {
+        if (dto.getMaterials() == null) return Collections.emptyList();
+        return dto.getMaterials().stream().map(mDto -> {
+            ServiceMaterial sm = new ServiceMaterial();
             Material material = new Material();
             material.setId(mDto.getMaterialId());
-            pm.setMaterial(material);
-            pm.setQuantity(mDto.getQuantity());
-            return pm;
+            sm.setMaterial(material);
+            sm.setQuantity(mDto.getQuantity());
+            return sm;
         }).collect(Collectors.toList());
+    }
 
-        List<ProcessEquipment> equipments = dto.getEquipments().stream().map(eDto -> {
-            ProcessEquipment pe = new ProcessEquipment();
+    private List<ServiceEquipment> mapEquipments(ServiceRequestDTO dto) {
+        if (dto.getEquipments() == null) return Collections.emptyList();
+        return dto.getEquipments().stream().map(eDto -> {
+            ServiceEquipment se = new ServiceEquipment();
             Equipment equipment = new Equipment();
             equipment.setId(eDto.getEquipmentId());
-            pe.setEquipment(equipment);
-            pe.setQuantity(eDto.getQuantity());
-            return pe;
+            se.setEquipment(equipment);
+            se.setQuantity(eDto.getQuantity());
+            return se;
         }).collect(Collectors.toList());
+    }
 
-        List<ProcessLabor> labors = dto.getLabors().stream().map(lDto -> {
-            ProcessLabor pl = new ProcessLabor();
+    private List<ServiceLabor> mapLabors(ServiceRequestDTO dto) {
+        if (dto.getLabors() == null) return Collections.emptyList();
+        return dto.getLabors().stream().map(lDto -> {
+            ServiceLabor sl = new ServiceLabor();
             Labor labor = new Labor();
             labor.setId(lDto.getLaborId());
-            pl.setLabor(labor);
-            pl.setDotation(lDto.getDotation());
-            return pl;
+            sl.setLabor(labor);
+            sl.setDotation(lDto.getDotation());
+            return sl;
         }).collect(Collectors.toList());
-
-        Process updated = apuService.updateApu(serviceRequest, processData, materials, equipments, labors);
-        return ResponseEntity.ok(updated);
     }
 }

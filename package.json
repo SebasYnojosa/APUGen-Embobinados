@@ -8,7 +8,10 @@
     "predev": "chmod +x backend/mvnw && npm run install:frontend",
     "dev:backend": "cd backend && ./mvnw spring-boot:run",
     "dev:frontend": "npm run dev --prefix frontend",
-    "dev": "npm i && concurrently -n \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgRed.bold\" \"npm run dev:backend\" \"wait-on tcp:localhost:8080 && npm run dev:frontend\""
+    "dev": "npm i && concurrently -n \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgRed.bold\" \"npm run dev:backend\" \"wait-on tcp:localhost:8080 && npm run dev:frontend\"",
+    "predev:win": "npm run install:frontend",
+    "dev:backend:win": "cd backend && .\\mvnw.cmd spring-boot:run",
+    "dev:win": "npm i && concurrently -n \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgRed.bold\" \"npm run dev:backend:win\" \"wait-on tcp:127.0.0.1:8080 && npm run dev:frontend\""
   },
   "keywords": [],
   "author": "",

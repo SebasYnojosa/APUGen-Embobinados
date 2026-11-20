@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import {Routes, Route, Link, Navigate} from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import ApuList from './pages/ApuList';
+import ProcessForm from './pages/ProcessForm';
+import ProcessDetail from './pages/ProcessDetail';
 import ApuForm from './pages/ApuForm';
-import ApuDetail from "./pages/ApuDetail.tsx";
+import ApuDetail from './pages/ApuDetail';
 import MaterialManager from './pages/MaterialManager';
 import CompanyManager from './pages/CompanyManager';
 import EquipmentManager from './pages/EquipmentManager';
@@ -23,15 +25,15 @@ function App() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-base-200">
+        <div className="min-h-screen bg-base-200 print:bg-white">
             {/* NAVBAR SUPERIOR */}
-            <div className="navbar bg-base-100 shadow-sm px-6">
+            <div className="navbar bg-base-100 shadow-sm px-6 print:hidden">
                 <div className="flex-1">
                     <Link to="/apus" className="btn btn-ghost text-xl font-bold">APU Gen</Link>
                 </div>
                 <div className="flex-none">
                     <ul className="menu menu-horizontal px-1 font-semibold gap-2 items-center">
-                        <li><Link to="/apus" onClick={() => setIsCatalogOpen(false)}>APUs</Link></li>
+                        <li><Link to="/apus" onClick={() => setIsCatalogOpen(false)}>Procesos / APUs</Link></li>
 
                         {/* MENÚ DESPLEGABLE DE CATÁLOGOS COMPLETO */}
                         <li className="relative" ref={dropdownRef}>
@@ -58,13 +60,22 @@ function App() {
             </div>
 
             {/* RUTAS DEL SISTEMA */}
-            <main className="max-w-7xl mx-auto py-8 px-4">
+            <main className="max-w-7xl mx-auto py-8 px-4 print:p-0 print:max-w-none">
                 <Routes>
                     <Route path="/" element={<Navigate replace to="/apus" />} />
+
+                    {/* Procesos (Obras) */}
                     <Route path="/apus" element={<ApuList />} />
-                    <Route path="/apus/nuevo" element={<ApuForm />} />
-                    <Route path="/apus/editar" element={<ApuForm />} />
-                    <Route path="/apus/detalle" element={<ApuDetail />} />
+                    <Route path="/apus/nuevo" element={<ProcessForm />} />
+                    <Route path="/apus/editar" element={<ProcessForm />} />
+                    <Route path="/apus/detalle" element={<ProcessDetail />} />
+
+                    {/* Servicios (APUs individuales dentro de una Obra) */}
+                    <Route path="/apus/servicio/nuevo" element={<ApuForm />} />
+                    <Route path="/apus/servicio/editar" element={<ApuForm />} />
+                    <Route path="/apus/servicio/detalle" element={<ApuDetail />} />
+
+                    {/* Catálogos Maestros */}
                     <Route path="/catalogos/empresas" element={<CompanyManager />} />
                     <Route path="/catalogos/materiales" element={<MaterialManager />} />
                     <Route path="/catalogos/equipos" element={<EquipmentManager />} />

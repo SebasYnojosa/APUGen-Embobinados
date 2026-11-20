@@ -4,45 +4,50 @@ import { apuService } from '../services/apuServices';
 import type { Process } from '../types';
 
 export default function ApuList() {
-    const [apus, setApus] = useState<Process[]>([]);
+    const [processes, setProcesses] = useState<Process[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchApus = async () => {
+    const fetchProcesses = async () => {
         try {
             setLoading(true);
-            const data = await apuService.getAllApus();
-            setApus(data);
+            const data = await apuService.getAllProcesses();
+            setProcesses(data);
             setError(null);
-        } catch (err) {
-            setError('Error al cargar los APUs desde el servidor.');
+        } catch {
+            setError('Error al cargar los procesos desde el servidor.');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchApus();
+        fetchProcesses();
     }, []);
 
     const handleDelete = async (serviceRequest: string) => {
-        if (!confirm(`¿Estás seguro de eliminar el APU con orden: ${serviceRequest}?`)) return;
+        if (!confirm(`¿Estás seguro de eliminar el proceso ${serviceRequest} y TODOS sus servicios asociados?`)) return;
         try {
-            await apuService.deleteApu(serviceRequest);
-            fetchApus();
+            await apuService.deleteProcess(serviceRequest);
+            fetchProcesses();
         } catch (err: any) {
-            alert(err.response?.data?.message || 'Error al eliminar el APU');
+            alert(err.response?.data?.message || 'Error al eliminar el proceso');
         }
     };
+
+    const getTotalProposed = (process: Process) =>
+        (process.services || []).reduce((acc, s) => acc + (s.proposedUnitPrice || 0), 0);
 
     return (
         <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold">Listado de APUs</h1>
-                    <p className="text-sm text-base-content/70">Presupuestos y análisis de precios unitarios registrados.</p>
+                    <h1 className="text-2xl font-bold">Listado de Procesos (Obras)</h1>
+                    <p className="text-sm text-base-content/70">
+                        Órdenes de trabajo y sus servicios (APUs) registrados.
+                    </p>
                 </div>
-                <Link to="/apus/nuevo" className="btn btn-primary btn-sm">+ Nuevo APU</Link>
+                <Link to="/apus/nuevo" className="btn btn-primary btn-sm">+ Nuevo Proceso</Link>
             </div>
 
             {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
@@ -54,43 +59,58 @@ export default function ApuList() {
                         <th>Orden / Solicitud</th>
                         <th>Empresa</th>
                         <th>Proceso Principal</th>
-                        <th>Descripción</th>
-                        <th>Precio Propuesto</th>
+                        <th>Equipo (Marca / Potencia)</th>
+                        <th className="text-center">Servicios</th>
+                        <th className="text-right">Total Propuesto</th>
                         <th className="text-center">Acciones</th>
                     </tr>
                     </thead>
                     <tbody>
                     {loading ? (
-                        <tr><td colSpan={6} className="text-center py-6">Cargando APUs...</td></tr>
-                    ) : apus.length === 0 ? (
-                        <tr><td colSpan={6} className="text-center py-6">No hay APUs registrados.</td></tr>
+                        <tr><td colSpan={7} className="text-center py-6">Cargando procesos...</td></tr>
+                    ) : processes.length === 0 ? (
+                        <tr><td colSpan={7} className="text-center py-6">No hay procesos registrados.</td></tr>
                     ) : (
-                        apus.map((apu) => (
-                            <tr key={apu.serviceRequest}>
-                                <td className="font-semibold">{apu.serviceRequest}</td>
-                                <td>{apu.company?.name || apu.company?.id}</td>
-                                <td>{apu.mainProcess}</td>
-                                <td>{apu.description}</td>
-                                <td className="font-bold text-primary">${apu.proposedUnitPrice?.toLocaleString()}</td>
-                                <td className="text-center space-x-2">
-                                    <Link
-                                        to={`/apus/detalle?serviceRequest=${encodeURIComponent(apu.serviceRequest)}`}
-                                        className="btn btn-xs btn-outline btn-info"
-                                    >
-                                        Ver Detalles
-                                    </Link>
-                                    <Link
-                                        to={`/apus/editar?serviceRequest=${encodeURIComponent(apu.serviceRequest)}`}
-                                        className="btn btn-xs btn-outline btn-warning"
-                                    >
-                                        Editar
-                                    </Link>
-                                    <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(apu.serviceRequest)}>
-                                        Eliminar
-                                    </button>
-                                </td>
-                            </tr>
-                        ))
+                        processes.map((proc) => {
+                            const servicesCount = proc.services?.length || 0;
+                            const totalProposed = getTotalProposed(proc);
+                            const specSummary = [proc.brand, proc.power].filter(Boolean).join(' / ') || 'N/A';
+
+                            return (
+                                <tr key={proc.serviceRequest}>
+                                    <td className="font-semibold">{proc.serviceRequest}</td>
+                                    <td>{proc.company?.name || proc.company?.id}</td>
+                                    <td>{proc.mainProcess}</td>
+                                    <td className="text-sm text-base-content/70">{specSummary}</td>
+                                    <td className="text-center">
+                                        <span className="badge badge-neutral badge-sm">{servicesCount}</span>
+                                    </td>
+                                    <td className="text-right font-bold text-primary">
+                                        ${totalProposed.toLocaleString('en-US')}
+                                    </td>
+                                    <td className="text-center space-x-2">
+                                        <Link
+                                            to={`/apus/detalle?serviceRequest=${encodeURIComponent(proc.serviceRequest)}`}
+                                            className="btn btn-xs btn-outline btn-info"
+                                        >
+                                            Ver Obra / Servicios
+                                        </Link>
+                                        <Link
+                                            to={`/apus/editar?serviceRequest=${encodeURIComponent(proc.serviceRequest)}`}
+                                            className="btn btn-xs btn-outline btn-warning"
+                                        >
+                                            Editar
+                                        </Link>
+                                        <button
+                                            className="btn btn-xs btn-outline btn-error"
+                                            onClick={() => handleDelete(proc.serviceRequest)}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })
                     )}
                     </tbody>
                 </table>

@@ -4,7 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -15,7 +16,7 @@ import java.util.List;
 public class Process {
     @Id
     @Column(name = "service_request", length = 20)
-    private String serviceRequest; // ID Manual (Solicitud de Servicio)
+    private String serviceRequest; // ID Manual (Solicitud de Servicio / Obra)
 
     @ManyToOne
     @JoinColumn(name = "company_id", nullable = false)
@@ -23,9 +24,6 @@ public class Process {
 
     @Column(name = "main_process", nullable = false, length = 100)
     private String mainProcess;
-
-    @Column(nullable = false, length = 100)
-    private String description;
 
     @Column(length = 50)
     private String power;
@@ -39,58 +37,6 @@ public class Process {
     @Column(length = 100)
     private String location;
 
-    // --- VARIABLES DEL APU (Atributos del Proceso) ---
-    @Column(name = "item_quantity", precision = 12, scale = 2)
-    private BigDecimal itemQuantity; // Cantidad de veces que se realizará el item
-
-    @Column(precision = 12, scale = 4)
-    private BigDecimal performance; // Rendimiento del item
-
-    @Column(name = "social_laws_percentage", precision = 5, scale = 4)
-    private BigDecimal socialLawsPercentage; // Porcentaje Leyes Sociales (Ej: 0.75 para 75%)
-
-    @Column(name = "admin_percentage", precision = 5, scale = 4)
-    private BigDecimal adminPercentage; // Porcentaje Administración
-
-    @Column(name = "utility_contingency_percentage", precision = 5, scale = 4)
-    private BigDecimal utilityContingencyPercentage; // Porcentaje Utilidad e Imprevistos
-
-    // --- TOTALES CALCULADOS (Se guardan para congelar el presupuesto) ---
-    @Column(name = "material_unit_cost", precision = 12, scale = 2)
-    private BigDecimal materialUnitCost; // Costo Unitario de Materiales
-
-    @Column(name = "equipment_unit_cost", precision = 12, scale = 2)
-    private BigDecimal equipmentUnitCost; // Costo Unitario de Equipos
-
-    @Column(name = "labor_unit_cost", precision = 12, scale = 2)
-    private BigDecimal laborUnitCost; // Costo Unitario de Mano de Obra
-
-    @Column(name = "direct_unit_cost", precision = 14, scale = 2)
-    private BigDecimal directUnitCost; // Sumatoria de los 3 anteriores
-
-    @Column(name = "admin_cost_value", precision = 14, scale = 2)
-    private BigDecimal adminCostValue; // directUnitCost * adminPercentage
-
-    @Column(name = "total_unit_cost", precision = 14, scale = 2)
-    private BigDecimal totalUnitCost; // directUnitCost + adminCostValue
-
-    @Column(name = "utility_cost_value", precision = 14, scale = 2)
-    private BigDecimal utilityCostValue; // totalUnitCost * utilityContingencyPercentage
-
-    @Column(name = "calculated_unit_price", precision = 14, scale = 2)
-    private BigDecimal calculatedUnitPrice; // totalUnitCost + utilityCostValue
-
-    // El precio propuesto debe ser entero según la regla
-    @Column(name = "proposed_unit_price")
-    private Integer proposedUnitPrice;
-
-    // --- RELACIONES EN CASCADA (Solución al TransientPropertyValueException) ---
     @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProcessMaterial> materials;
-
-    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProcessEquipment> equipments;
-
-    @OneToMany(mappedBy = "process", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProcessLabor> labors;
+    private List<ProcessService> services = new ArrayList<>();
 }
