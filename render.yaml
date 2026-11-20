@@ -53,4 +53,4 @@ services:
         fromService:
           type: web
           name: apu-gen-backend
-          property: host
+          envVarKey: RENDER_EXTERNAL_URL
