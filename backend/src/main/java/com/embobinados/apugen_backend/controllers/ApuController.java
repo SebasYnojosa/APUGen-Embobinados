@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/apus")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ApuController {
 
     private final ApuService apuService;
