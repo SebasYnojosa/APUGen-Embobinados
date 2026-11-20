@@ -1,20 +1,28 @@
 import axios from 'axios';
 
-// Creamos una instancia de Axios con la URL base de nuestro Spring Boot
+const resolveApiBaseUrl = (): string => {
+    const raw = import.meta.env.VITE_API_URL?.trim();
+    if (!raw) {
+        return 'http://localhost:8080/api';
+    }
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const clean = withProtocol.replace(/\/+$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
+};
+
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: resolveApiBaseUrl(),
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Interceptor opcional para manejar errores globalmente en el frontend
+// Interceptor para manejar errores globalmente en el frontend
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Aquí capturamos el JSON limpio que arroja tu GlobalExceptionHandler de Java
         if (error.response && error.response.data) {
-            console.error("Error del backend:", error.response.data.message);
+            console.error('Error del backend:', error.response.data.message);
         }
         return Promise.reject(error);
     }

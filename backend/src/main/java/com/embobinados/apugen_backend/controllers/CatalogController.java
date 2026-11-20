@@ -18,7 +18,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/catalogos")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Previene bloqueos CORS desde React
 public class CatalogController {
 
     // Inyección de dependencias de los repositorios maestros
