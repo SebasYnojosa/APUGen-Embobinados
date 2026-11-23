@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
+import { formatMotorType } from '../utils/codificationUtils';
 import type { Process } from '../types';
 
 export default function ApuList() {
@@ -59,7 +60,7 @@ export default function ApuList() {
                         <th>Orden / Solicitud</th>
                         <th>Empresa</th>
                         <th>Proceso Principal</th>
-                        <th>Equipo (Marca / Potencia)</th>
+                        <th>Equipo (Marca / Potencia / Tipo)</th>
                         <th className="text-center">Servicios</th>
                         <th className="text-right">Total Propuesto</th>
                         <th className="text-center">Acciones</th>
@@ -74,7 +75,14 @@ export default function ApuList() {
                         processes.map((proc) => {
                             const servicesCount = proc.services?.length || 0;
                             const totalProposed = getTotalProposed(proc);
-                            const specSummary = [proc.brand, proc.power].filter(Boolean).join(' / ') || 'N/A';
+                            const specSummary =
+                                [
+                                    proc.brand,
+                                    proc.power,
+                                    proc.tipoM ? `Motor ${formatMotorType(proc.tipoM)}` : '',
+                                ]
+                                    .filter(Boolean)
+                                    .join(' / ') || 'N/A';
 
                             return (
                                 <tr key={proc.serviceRequest}>

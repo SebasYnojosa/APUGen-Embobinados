@@ -26,6 +26,23 @@ export interface Labor {
     baseDailyWage: number;
 }
 
+export type CodificationType = 'mat' | 'equ' | 'mdo';
+
+export interface CatalogCodification {
+    id: string;
+    code: string;
+    description: string;
+    type: CodificationType;
+}
+
+export interface CatalogCodificationRequest {
+    code: string;
+    description: string;
+    type: CodificationType;
+}
+
+export type MotorType = 'pequeño' | 'mediano' | 'grande';
+
 // ==========================================
 // DETALLES DEL SERVICIO (SNAPSHOTS)
 // ==========================================
@@ -92,6 +109,7 @@ export interface Process {
     company: Company;
     mainProcess: string;
     power?: string;
+    tipoM?: MotorType | '';
     serial?: string;
     brand?: string;
     location?: string;
@@ -106,6 +124,7 @@ export interface ProcessRequestDTO {
     companyId: string;
     mainProcess: string;
     power?: string;
+    tipoM?: MotorType | '';
     serial?: string;
     brand?: string;
     location?: string;

@@ -143,6 +143,7 @@ public class ApuController {
         Process process = new Process();
         process.setMainProcess(dto.getMainProcess());
         process.setPower(dto.getPower());
+        process.setTipoM(dto.getTipoM());
         process.setSerial(dto.getSerial());
         process.setBrand(dto.getBrand());
         process.setLocation(dto.getLocation());

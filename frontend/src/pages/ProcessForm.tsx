@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { catalogService } from '../services/catalogServices';
 import { apuService } from '../services/apuServices';
-import type { Company } from '../types';
+import { MOTOR_TYPE_OPTIONS } from '../utils/codificationUtils';
+import type { Company, MotorType } from '../types';
 
 const normalizeText = (text: string) =>
     text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -28,6 +29,7 @@ export default function ProcessForm() {
         isNewCompany: false,
         mainProcess: '',
         power: '',
+        tipoM: '' as MotorType | '',
         serial: '',
         brand: '',
         location: '',
@@ -73,6 +75,7 @@ export default function ProcessForm() {
                     isNewCompany: false,
                     mainProcess: p.mainProcess,
                     power: p.power || '',
+                    tipoM: (p.tipoM || '') as MotorType | '',
                     serial: p.serial || '',
                     brand: p.brand || '',
                     location: p.location || '',
@@ -93,7 +96,7 @@ export default function ProcessForm() {
         ? catalogCompanies.filter((c) => normalizeText(c.name).startsWith(normalizedNameQuery))
         : [];
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setHeader(prev => ({ ...prev, [name]: value }));
     };
@@ -222,6 +225,7 @@ export default function ProcessForm() {
                 companyId: header.companyId.trim(),
                 mainProcess: header.mainProcess.trim(),
                 power: header.power,
+                tipoM: header.tipoM,
                 serial: header.serial,
                 brand: header.brand,
                 location: header.location,
@@ -363,7 +367,7 @@ export default function ProcessForm() {
 
                 {/* ESPECIFICACIONES DEL EQUIPO */}
                 <h2 className="text-lg font-semibold mb-3">Especificaciones del Equipo</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
                     <div className="form-control">
                         <label className="label"><span className="label-text">Potencia</span></label>
                         <input
@@ -372,9 +376,26 @@ export default function ProcessForm() {
                             name="power"
                             value={header.power}
                             onChange={handleInputChange}
-                            onKeyDown={(e) => handleEnterFocus(e, 'input-serial')}
+                            onKeyDown={(e) => handleEnterFocus(e, 'input-tipoM')}
                             className={`input input-bordered input-sm ${getHeaderHighlight('power')}`}
                         />
+                    </div>
+                    <div className="form-control">
+                        <label className="label"><span className="label-text">Tipo de Motor</span></label>
+                        <select
+                            id="input-tipoM"
+                            name="tipoM"
+                            value={header.tipoM}
+                            onChange={handleInputChange}
+                            className={`select select-bordered select-sm w-full ${getHeaderHighlight('tipoM')}`}
+                        >
+                            <option value="">Seleccionar...</option>
+                            {MOTOR_TYPE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div className="form-control">
                         <label className="label"><span className="label-text">Serial</span></label>

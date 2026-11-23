@@ -50,6 +50,7 @@ public class ApuService {
         Company company = companyRepository.findById(process.getCompany().getId())
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada: " + process.getCompany().getId()));
         process.setCompany(company);
+        process.setTipoM(normalizeAndValidateMotorType(process.getTipoM()));
 
         return processRepository.save(process);
     }
@@ -125,11 +126,23 @@ public class ApuService {
         existing.setCompany(company);
         existing.setMainProcess(updatedData.getMainProcess());
         existing.setPower(updatedData.getPower());
+        existing.setTipoM(normalizeAndValidateMotorType(updatedData.getTipoM()));
         existing.setSerial(updatedData.getSerial());
         existing.setBrand(updatedData.getBrand());
         existing.setLocation(updatedData.getLocation());
 
         return processRepository.save(existing);
+    }
+
+    private String normalizeAndValidateMotorType(String rawTipoM) {
+        if (rawTipoM == null || rawTipoM.isBlank()) {
+            return null;
+        }
+        String normalized = rawTipoM.trim().toLowerCase();
+        if (!normalized.equals("pequeño") && !normalized.equals("mediano") && !normalized.equals("grande")) {
+            throw new RuntimeException("Tipo de motor inválido. Debe ser pequeño, mediano o grande.");
+        }
+        return normalized;
     }
 
     @Transactional

@@ -28,6 +28,9 @@ public class Process {
     @Column(length = 50)
     private String power;
 
+    @Column(name = "tipo_m", length = 20)
+    private String tipoM; // "pequeño", "mediano", "grande"
+
     @Column(length = 100)
     private String serial;
 
