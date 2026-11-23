@@ -2,17 +2,30 @@ import { useState, useEffect } from 'react';
 import { catalogService } from '../services/catalogServices';
 import type { Equipment } from '../types';
 
+interface EquipmentFormState {
+    id: string;
+    description: string;
+    baseValue: string;
+    depreciationFactor: string;
+}
+
+const INITIAL_FORM: EquipmentFormState = {
+    id: '',
+    description: '',
+    baseValue: '',
+    depreciationFactor: '',
+};
+
 export default function EquipmentManager() {
     const [equipments, setEquipments] = useState<Equipment[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    // NUEVO: Estados específicos para el modal
     const [modalError, setModalError] = useState<string | null>(null);
     const [modalSuccess, setModalSuccess] = useState<string | null>(null);
 
-    const [currentEquipment, setCurrentEquipment] = useState<Equipment>({ id: '', description: '', baseValue: 0, depreciationFactor: 0 });
+    const [currentEquipment, setCurrentEquipment] = useState<EquipmentFormState>(INITIAL_FORM);
     const [isEditing, setIsEditing] = useState<boolean>(false);
 
     const fetchEquipment = async () => {
@@ -20,8 +33,8 @@ export default function EquipmentManager() {
             setLoading(true);
             const data = await catalogService.getEquipments();
             setEquipments(data);
-        } catch (err: any) {
-            setError('Error al cargar los materiales del servidor.');
+        } catch {
+            setError('Error al cargar los equipos del servidor.');
         } finally {
             setLoading(false);
         }
@@ -31,14 +44,14 @@ export default function EquipmentManager() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setCurrentEquipment(prev => ({ ...prev, [name]: name === 'baseValue' || name == 'depreciationFactor' ? parseFloat(value) || 0 : value }));
+        setCurrentEquipment(prev => ({ ...prev, [name]: value }));
     };
 
     const openCreateModal = () => {
         setIsEditing(false);
         setModalError(null);
         setModalSuccess(null);
-        setCurrentEquipment({ id: '', description: '', baseValue: 0, depreciationFactor: 0 });
+        setCurrentEquipment(INITIAL_FORM);
         (document.getElementById('modal_equipment') as HTMLDialogElement)?.showModal();
     };
 
@@ -46,7 +59,12 @@ export default function EquipmentManager() {
         setIsEditing(true);
         setModalError(null);
         setModalSuccess(null);
-        setCurrentEquipment(equ);
+        setCurrentEquipment({
+            id: equ.id,
+            description: equ.description,
+            baseValue: String(equ.baseValue),
+            depreciationFactor: String(equ.depreciationFactor),
+        });
         (document.getElementById('modal_equipment') as HTMLDialogElement)?.showModal();
     };
 
@@ -61,23 +79,45 @@ export default function EquipmentManager() {
         setModalError(null);
         setModalSuccess(null);
 
+        const parsedBaseValue = parseFloat(currentEquipment.baseValue);
+        const parsedDepreciation = parseFloat(currentEquipment.depreciationFactor);
+
+        if (Number.isNaN(parsedBaseValue) || parsedBaseValue < 0) {
+            setModalError('El precio base debe ser un número válido.');
+            return;
+        }
+
+        if (Number.isNaN(parsedDepreciation) || parsedDepreciation === 0) {
+            setModalError('El factor de depreciación no puede ser 0.');
+            return;
+        }
+
+        if (parsedDepreciation < 0) {
+            setModalError('El factor de depreciación debe ser mayor que 0.');
+            return;
+        }
+
+        const payload: Equipment = {
+            id: currentEquipment.id.trim(),
+            description: currentEquipment.description.trim(),
+            baseValue: parsedBaseValue,
+            depreciationFactor: parsedDepreciation,
+        };
+
         try {
             if (isEditing) {
-                await catalogService.updateEquipment(currentEquipment.id, currentEquipment);
-                setSuccessMessage('Material actualizado exitosamente.');
+                await catalogService.updateEquipment(payload.id, payload);
+                setSuccessMessage('Equipo actualizado exitosamente.');
                 fetchEquipment();
-                closeModal(); // Si edita, sí cerramos el modal
+                closeModal();
             } else {
-                await catalogService.createEquipment(currentEquipment);
+                await catalogService.createEquipment(payload);
                 fetchEquipment();
-                setModalSuccess(`¡Equipo ${currentEquipment.id} registrado! Puedes registrar otro.`);
-                // Limpiamos los inputs para creación continua
-                setCurrentEquipment({ id: '', description: '', baseValue: 0, depreciationFactor: 0 });
-                // Devolvemos el foco al ID automáticamente
+                setModalSuccess(`¡Equipo ${payload.id} registrado! Puedes registrar otro.`);
+                setCurrentEquipment(INITIAL_FORM);
                 document.getElementById('input-mat-id')?.focus();
             }
         } catch (err: any) {
-            // El error ahora se muestra DENTRO del modal
             setModalError(err.response?.data?.message || 'Ocurrió un error al procesar la solicitud.');
         }
     };
@@ -140,11 +180,11 @@ export default function EquipmentManager() {
                         </div>
                         <div className="form-control">
                             <label className="label"><span className="label-text">Precio Base*</span></label>
-                            <input type="number" step="0.01" name="baseValue" value={currentEquipment.baseValue || ''} onChange={handleInputChange} className="input input-bordered" placeholder="0.00" required />
+                            <input type="number" step="any" name="baseValue" value={currentEquipment.baseValue} onChange={handleInputChange} className="input input-bordered" placeholder="0.00" required />
                         </div>
                         <div className="form-control">
                             <label className="label"><span className="label-text">F. Depreciación*</span></label>
-                            <input type="number" step="0.000001" name="depreciationFactor" value={currentEquipment.depreciationFactor || ''} onChange={handleInputChange} className="input input-bordered" placeholder="0.000000" required />
+                            <input type="number" step="any" name="depreciationFactor" value={currentEquipment.depreciationFactor} onChange={handleInputChange} className="input input-bordered" placeholder="0.000000" required />
                         </div>
                         <div className="modal-action">
                             <button type="submit" className="btn btn-primary">{isEditing ? 'Actualizar' : 'Guardar'}</button>

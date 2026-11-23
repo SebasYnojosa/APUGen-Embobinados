@@ -515,6 +515,19 @@ export default function ApuForm() {
             alert('Hay un cargo de mano de obra sin ID. Selecciona uno del listado o ingresa un ID para crearlo nuevo.');
             return;
         }
+        for (const eq of equipments) {
+            if (eq.isNew) {
+                const dep = parseFloat(String(eq.depreciation));
+                if (Number.isNaN(dep) || dep === 0) {
+                    alert(`El factor de depreciación del equipo "${eq.equipmentId || eq.description}" no puede ser 0.`);
+                    return;
+                }
+                if (dep < 0) {
+                    alert(`El factor de depreciación del equipo "${eq.equipmentId || eq.description}" debe ser mayor que 0.`);
+                    return;
+                }
+            }
+        }
 
         try {
             setIsSaving(true);
@@ -804,8 +817,8 @@ export default function ApuForm() {
                                         </ul>
                                     )}
                                 </div>
-                                <input id={`input-equipment-price-${index}`} type="number" className={`input input-sm input-bordered w-full ${!eq.isNew && 'bg-base-200'}`} value={eq.baseValue} onChange={(e) => updateEquipment(index, 'baseValue', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-deprec-${index}`)} />
-                                <input id={`input-equipment-deprec-${index}`} type="number" className={`input input-sm input-bordered w-full ${!eq.isNew && 'bg-base-200'}`} value={eq.depreciation} onChange={(e) => updateEquipment(index, 'depreciation', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-qty-${index}`)} />
+                                <input id={`input-equipment-price-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${!eq.isNew && 'bg-base-200'}`} value={eq.baseValue} onChange={(e) => updateEquipment(index, 'baseValue', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-deprec-${index}`)} />
+                                <input id={`input-equipment-deprec-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${!eq.isNew && 'bg-base-200'}`} value={eq.depreciation} onChange={(e) => updateEquipment(index, 'depreciation', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-qty-${index}`)} />
                                 <input id={`input-equipment-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${getListHighlight(originalEquipments, index, 'quantity', eq.quantity)}`} value={eq.quantity} onChange={(e) => updateEquipment(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < equipments.length ? `input-equipment-id-${index + 1}` : 'btn-add-equipment')} />
                                 <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeEquipment(index)}>-</button>
                             </div>

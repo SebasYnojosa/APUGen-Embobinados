@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -216,6 +217,7 @@ public class CatalogController {
         if (equipmentRepository.existsById(equipo.getId())) {
             throw new RuntimeException("Ya existe un equipo registrado con el ID: " + equipo.getId());
         }
+        validarFactorDepreciacion(equipo.getDepreciationFactor());
         return ResponseEntity.ok(equipmentRepository.save(equipo));
     }
 
@@ -228,11 +230,22 @@ public class CatalogController {
         Equipment equipo = equipmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No se encontró el equipo con ID: " + id));
 
+        validarFactorDepreciacion(detalles.getDepreciationFactor());
+
         equipo.setDescription(detalles.getDescription());
         equipo.setBaseValue(detalles.getBaseValue());
         equipo.setDepreciationFactor(detalles.getDepreciationFactor());
 
         return ResponseEntity.ok(equipmentRepository.save(equipo));
+    }
+
+    private void validarFactorDepreciacion(BigDecimal depreciationFactor) {
+        if (depreciationFactor == null || depreciationFactor.compareTo(BigDecimal.ZERO) == 0) {
+            throw new RuntimeException("El factor de depreciación no puede ser 0.");
+        }
+        if (depreciationFactor.compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("El factor de depreciación debe ser mayor que 0.");
+        }
     }
 
     // @DeleteMapping("/equipos/{id}")
