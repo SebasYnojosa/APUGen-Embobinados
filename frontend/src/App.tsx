@@ -14,6 +14,7 @@ import UserManager from './pages/UserManager';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import ThemeToggle from './components/ThemeToggle';
 import { useAuth } from './context/AuthContext';
 
 function AuthenticatedLayout() {
@@ -174,6 +175,11 @@ function AuthenticatedLayout() {
                                     </li>
                                 </ul>
                             </details>
+                        </li>
+
+                        {/* SELECTOR DE TEMA CLARO / OSCURO */}
+                        <li>
+                            <ThemeToggle className="!px-2" />
                         </li>
                     </ul>
                 </div>
