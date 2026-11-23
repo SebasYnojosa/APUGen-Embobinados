@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Usamos un 'record' de Java 21 para definir la estructura del JSON de error
     public record ErrorResponse(
             LocalDateTime timestamp,
             int status,
@@ -18,17 +17,25 @@ public class GlobalExceptionHandler {
             String message
     ) {}
 
-    // Intercepta las RuntimeException (las que lanzamos en el ApuService)
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "No Autorizado",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
-
         ErrorResponse error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "Error en la Petición",
-                ex.getMessage() // Aquí inyectará "Material no encontrado", etc.
+                ex.getMessage()
         );
-
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 }
