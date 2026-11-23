@@ -1,9 +1,11 @@
 package com.embobinados.apugen_backend.controllers;
 
+import com.embobinados.apugen_backend.entity.CatalogCodification;
 import com.embobinados.apugen_backend.entity.Company;
 import com.embobinados.apugen_backend.entity.Equipment;
 import com.embobinados.apugen_backend.entity.Labor;
 import com.embobinados.apugen_backend.entity.Material;
+import com.embobinados.apugen_backend.repository.CatalogCodificationRepository;
 import com.embobinados.apugen_backend.repository.CompanyRepository;
 import com.embobinados.apugen_backend.repository.EquipmentRepository;
 import com.embobinados.apugen_backend.repository.LaborRepository;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/catalogos")
@@ -22,11 +25,14 @@ import java.util.List;
 @CrossOrigin(origins = "*") // Previene bloqueos CORS desde React
 public class CatalogController {
 
+    private static final Set<String> VALID_CODIFICATION_TYPES = Set.of("mat", "equ", "mdo");
+
     // Inyección de dependencias de los repositorios maestros
     private final CompanyRepository companyRepository;
     private final MaterialRepository materialRepository;
     private final EquipmentRepository equipmentRepository;
     private final LaborRepository laborRepository;
+    private final CatalogCodificationRepository catalogCodificationRepository;
 
 
 
@@ -325,5 +331,98 @@ public class CatalogController {
             throw new RuntimeException("No se puede borrar el cargo porque está siendo usado en un APU.");
         }
         return ResponseEntity.noContent().build();
+    }
+
+    // ==========================================
+    // CRUD PARA CODIFICACIONES DEL CATÁLOGO
+    // ==========================================
+
+    @GetMapping("/codificaciones")
+    public ResponseEntity<List<CatalogCodification>> listarCodificaciones(
+            @RequestParam(value = "tipo", required = false) String tipo
+    ) {
+        if (tipo != null && !tipo.isBlank()) {
+            String normalizedType = validarTipoCodificacion(tipo);
+            return ResponseEntity.ok(catalogCodificationRepository.findByTypeOrderByCodeAsc(normalizedType));
+        }
+        return ResponseEntity.ok(catalogCodificationRepository.findAllByOrderByTypeAscCodeAsc());
+    }
+
+    @PostMapping("/codificaciones")
+    public ResponseEntity<CatalogCodification> crearCodificacion(@RequestBody CatalogCodification codificacion) {
+        String normalizedCode = validarCodigoCodificacion(codificacion.getCode());
+        if (catalogCodificationRepository.existsByCodeIgnoreCase(normalizedCode)) {
+            throw new RuntimeException("Ya existe una codificación registrada con el código: " + normalizedCode);
+        }
+        String description = validarDescripcionCodificacion(codificacion.getDescription());
+        String normalizedType = validarTipoCodificacion(codificacion.getType());
+
+        CatalogCodification nueva = new CatalogCodification();
+        nueva.setCode(normalizedCode);
+        nueva.setDescription(description);
+        nueva.setType(normalizedType);
+
+        return ResponseEntity.ok(catalogCodificationRepository.save(nueva));
+    }
+
+    @PutMapping("/codificaciones")
+    public ResponseEntity<CatalogCodification> actualizarCodificacion(
+            @RequestParam("id") String id,
+            @RequestBody CatalogCodification detalles
+    ) {
+        CatalogCodification existente = catalogCodificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró la codificación con ID: " + id));
+
+        String normalizedCode = validarCodigoCodificacion(detalles.getCode());
+        if (!existente.getCode().equalsIgnoreCase(normalizedCode)
+                && catalogCodificationRepository.existsByCodeIgnoreCase(normalizedCode)) {
+            throw new RuntimeException("Ya existe una codificación registrada con el código: " + normalizedCode);
+        }
+        String description = validarDescripcionCodificacion(detalles.getDescription());
+        String normalizedType = validarTipoCodificacion(detalles.getType());
+
+        existente.setCode(normalizedCode);
+        existente.setDescription(description);
+        existente.setType(normalizedType);
+
+        return ResponseEntity.ok(catalogCodificationRepository.save(existente));
+    }
+
+    @DeleteMapping("/codificaciones")
+    public ResponseEntity<Void> borrarCodificacion(@RequestParam("id") String id) {
+        if (!catalogCodificationRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró la codificación con ID: " + id);
+        }
+        catalogCodificationRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private String validarCodigoCodificacion(String rawCode) {
+        if (rawCode == null || rawCode.isBlank()) {
+            throw new RuntimeException("El código de codificación es obligatorio.");
+        }
+        String cleaned = rawCode.trim().toUpperCase();
+        if (cleaned.length() != 3 || cleaned.contains(" ")) {
+            throw new RuntimeException("El código debe tener exactamente 3 caracteres sin espacios (Ej: DES, BAR).");
+        }
+        return cleaned;
+    }
+
+    private String validarDescripcionCodificacion(String rawDescription) {
+        if (rawDescription == null || rawDescription.isBlank()) {
+            throw new RuntimeException("La descripción de la codificación es obligatoria.");
+        }
+        return rawDescription.trim();
+    }
+
+    private String validarTipoCodificacion(String rawType) {
+        if (rawType == null || rawType.isBlank()) {
+            throw new RuntimeException("El tipo de catálogo es obligatorio (mat, equ o mdo).");
+        }
+        String normalized = rawType.trim().toLowerCase();
+        if (!VALID_CODIFICATION_TYPES.contains(normalized)) {
+            throw new RuntimeException("Tipo de catálogo inválido. Debe ser 'mat', 'equ' o 'mdo'.");
+        }
+        return normalized;
     }
 }

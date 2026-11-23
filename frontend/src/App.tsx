@@ -9,6 +9,7 @@ import MaterialManager from './pages/MaterialManager';
 import CompanyManager from './pages/CompanyManager';
 import EquipmentManager from './pages/EquipmentManager';
 import LaborManager from './pages/LaborManager';
+import CodificationManager from './pages/CodificationManager';
 import LoginPage from './pages/LoginPage';
 import UserManager from './pages/UserManager';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -107,6 +108,11 @@ function AuthenticatedLayout() {
                                     <li>
                                         <Link to="/catalogos/cargos" onClick={closeAllMenus}>
                                             Mano de Obra
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/catalogos/codificaciones" onClick={closeAllMenus}>
+                                            Codificaciones
                                         </Link>
                                     </li>
                                 </ul>
@@ -236,6 +242,7 @@ function App() {
                     <Route path="/catalogos/materiales" element={<MaterialManager />} />
                     <Route path="/catalogos/equipos" element={<EquipmentManager />} />
                     <Route path="/catalogos/cargos" element={<LaborManager />} />
+                    <Route path="/catalogos/codificaciones" element={<CodificationManager />} />
 
                     {/* Administración de Usuarios (Solo ADMIN) */}
                     <Route element={<AdminRoute />}>

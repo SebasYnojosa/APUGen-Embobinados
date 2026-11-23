@@ -1,5 +1,13 @@
 import api from './api';
-import type { Company, Material, Equipment, Labor } from '../types';
+import type {
+    CatalogCodification,
+    CatalogCodificationRequest,
+    CodificationType,
+    Company,
+    Equipment,
+    Labor,
+    Material,
+} from '../types';
 
 export const catalogService = {
     // ==========================================
@@ -14,11 +22,11 @@ export const catalogService = {
         return response.data;
     },
     updateCompany: async (id: string, company: Partial<Company>): Promise<Company> => {
-        const response = await api.put<Company>(`/catalogos/empresas?id=${id}`, company);
+        const response = await api.put<Company>(`/catalogos/empresas?id=${encodeURIComponent(id)}`, company);
         return response.data;
     },
     deleteCompany: async (id: string): Promise<void> => {
-        await api.delete(`/catalogos/empresas?id=${id}`);
+        await api.delete(`/catalogos/empresas?id=${encodeURIComponent(id)}`);
     },
 
     // ==========================================
@@ -33,11 +41,11 @@ export const catalogService = {
         return response.data;
     },
     updateMaterial: async (id: string, material: Partial<Material>): Promise<Material> => {
-        const response = await api.put<Material>(`/catalogos/materiales?id=${id}`, material);
+        const response = await api.put<Material>(`/catalogos/materiales?id=${encodeURIComponent(id)}`, material);
         return response.data;
     },
     deleteMaterial: async (id: string): Promise<void> => {
-        await api.delete(`/catalogos/materiales?id=${id}`);
+        await api.delete(`/catalogos/materiales?id=${encodeURIComponent(id)}`);
     },
 
     // ==========================================
@@ -52,11 +60,11 @@ export const catalogService = {
         return response.data;
     },
     updateEquipment: async (id: string, equipment: Partial<Equipment>): Promise<Equipment> => {
-        const response = await api.put<Equipment>(`/catalogos/equipos?id=${id}`, equipment);
+        const response = await api.put<Equipment>(`/catalogos/equipos?id=${encodeURIComponent(id)}`, equipment);
         return response.data;
     },
     deleteEquipment: async (id: string): Promise<void> => {
-        await api.delete(`/catalogos/equipos?id=${id}`);
+        await api.delete(`/catalogos/equipos?id=${encodeURIComponent(id)}`);
     },
 
     // ==========================================
@@ -71,10 +79,39 @@ export const catalogService = {
         return response.data;
     },
     updateLabor: async (id: string, labor: Partial<Labor>): Promise<Labor> => {
-        const response = await api.put<Labor>(`/catalogos/cargos?id=${id}`, labor);
+        const response = await api.put<Labor>(`/catalogos/cargos?id=${encodeURIComponent(id)}`, labor);
         return response.data;
     },
     deleteLabor: async (id: string): Promise<void> => {
-        await api.delete(`/catalogos/cargos?id=${id}`);
-    }
+        await api.delete(`/catalogos/cargos?id=${encodeURIComponent(id)}`);
+    },
+
+    // ==========================================
+    // CODIFICACIONES DEL CATÁLOGO
+    // ==========================================
+    getCodifications: async (tipo?: CodificationType): Promise<CatalogCodification[]> => {
+        const response = await api.get<CatalogCodification[]>('/catalogos/codificaciones', {
+            params: tipo ? { tipo } : undefined,
+        });
+        return response.data;
+    },
+    createCodification: async (
+        payload: CatalogCodificationRequest
+    ): Promise<CatalogCodification> => {
+        const response = await api.post<CatalogCodification>('/catalogos/codificaciones', payload);
+        return response.data;
+    },
+    updateCodification: async (
+        id: string,
+        payload: CatalogCodificationRequest
+    ): Promise<CatalogCodification> => {
+        const response = await api.put<CatalogCodification>(
+            `/catalogos/codificaciones?id=${encodeURIComponent(id)}`,
+            payload
+        );
+        return response.data;
+    },
+    deleteCodification: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/codificaciones?id=${encodeURIComponent(id)}`);
+    },
 };

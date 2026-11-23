@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
+import { formatMotorType } from '../utils/codificationUtils';
 import type { ProcessResponseDTO } from '../types';
 
 export default function ProcessDetail() {
@@ -96,10 +97,14 @@ export default function ProcessDetail() {
             {/* ESPECIFICACIONES DEL EQUIPO */}
             <div className="bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none">
                 <h3 className="text-lg font-bold mb-4 border-b pb-2">Especificaciones del Equipo</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                     <div>
                         <span className="font-semibold block text-base-content/60">Potencia</span>
                         <span>{process.power || 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span className="font-semibold block text-base-content/60">Tipo de Motor</span>
+                        <span>{formatMotorType(process.tipoM)}</span>
                     </div>
                     <div>
                         <span className="font-semibold block text-base-content/60">Serial</span>

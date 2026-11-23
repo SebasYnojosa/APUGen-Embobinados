@@ -2,7 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { catalogService } from '../services/catalogServices';
 import { apuService } from '../services/apuServices';
-import type { Material, Equipment, Labor, Process } from '../types';
+import CodificationPickerModal from '../components/CodificationPickerModal';
+import CreateCodificationModal from '../components/CreateCodificationModal';
+import {
+    applyCodificationToId,
+    extractCodificationPrefix,
+} from '../utils/codificationUtils';
+import type {
+    Material,
+    Equipment,
+    Labor,
+    Process,
+    CatalogCodification,
+    CodificationType,
+} from '../types';
 
 const normalizeText = (text: string) =>
     text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -11,6 +24,18 @@ type ResourceDropdown = {
     type: 'material' | 'equipment' | 'labor';
     index: number;
 } | null;
+
+type SelectedIdInput = {
+    type: CodificationType;
+    index: number;
+} | null;
+
+interface CreateCodifModalState {
+    isOpen: boolean;
+    initialCode: string;
+    lockedType: CodificationType;
+    rowIndex: number;
+}
 
 export default function ApuForm() {
     const navigate = useNavigate();
@@ -24,11 +49,19 @@ export default function ApuForm() {
     const [catalogMaterials, setCatalogMaterials] = useState<Material[]>([]);
     const [catalogEquipments, setCatalogEquipments] = useState<Equipment[]>([]);
     const [catalogLabors, setCatalogLabors] = useState<Labor[]>([]);
+    const [codifications, setCodifications] = useState<CatalogCodification[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     const [activeDropdown, setActiveDropdown] = useState<ResourceDropdown>(null);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const listsContainerRef = useRef<HTMLDivElement>(null);
+
+    // Control de codificaciones (botón amarillo activo al seleccionar input de ID + popups)
+    const [selectedIdInput, setSelectedIdInput] = useState<SelectedIdInput>(null);
+    const [pickerTarget, setPickerTarget] = useState<SelectedIdInput>(null);
+    const [createCodifModal, setCreateCodifModal] = useState<CreateCodifModalState | null>(null);
+    const lastPromptedRef = useRef<Record<string, string>>({});
+    const activeModalRef = useRef<boolean>(false);
 
     // Estado principal del formulario de Servicio
     const [serviceData, setServiceData] = useState({
@@ -53,14 +86,16 @@ export default function ApuForm() {
     useEffect(() => {
         const fetchCatalogs = async () => {
             try {
-                const [mats, eqs, labs] = await Promise.all([
+                const [mats, eqs, labs, codifs] = await Promise.all([
                     catalogService.getMaterials(),
                     catalogService.getEquipments(),
                     catalogService.getLabors(),
+                    catalogService.getCodifications(),
                 ]);
                 setCatalogMaterials(mats);
                 setCatalogEquipments(eqs);
                 setCatalogLabors(labs);
+                setCodifications(codifs);
             } catch (error) {
                 console.error('Error cargando catálogos:', error);
             }
@@ -170,6 +205,153 @@ export default function ApuForm() {
     };
 
     // ==========================================
+    // CODIFICACIONES (SELECTOR Y CREACIÓN AL VUELO)
+    // ==========================================
+    const getRowIdInputElementId = (type: CodificationType, index: number) => {
+        if (type === 'mat') return `input-material-id-${index}`;
+        if (type === 'equ') return `input-equipment-id-${index}`;
+        return `input-labor-id-${index}`;
+    };
+
+    const getRowDescInputElementId = (type: CodificationType, index: number) => {
+        if (type === 'mat') return `input-material-desc-${index}`;
+        if (type === 'equ') return `input-equipment-desc-${index}`;
+        return `input-labor-desc-${index}`;
+    };
+
+    const focusInputAtEnd = (elementId: string) => {
+        window.setTimeout(() => {
+            const el = document.getElementById(elementId) as HTMLInputElement | null;
+            if (el) {
+                el.focus();
+                el.setSelectionRange(el.value.length, el.value.length);
+            }
+        }, 40);
+    };
+
+    const getCurrentRowId = (type: CodificationType, index: number): string => {
+        if (type === 'mat') return String(materials[index]?.materialId || '');
+        if (type === 'equ') return String(equipments[index]?.equipmentId || '');
+        return String(labors[index]?.laborId || '');
+    };
+
+    const setCurrentRowId = (type: CodificationType, index: number, newId: string) => {
+        if (type === 'mat') {
+            setMaterials((prev) => prev.map((item, i) => (i === index ? { ...item, materialId: newId } : item)));
+        } else if (type === 'equ') {
+            setEquipments((prev) => prev.map((item, i) => (i === index ? { ...item, equipmentId: newId } : item)));
+        } else {
+            setLabors((prev) => prev.map((item, i) => (i === index ? { ...item, laborId: newId } : item)));
+        }
+    };
+
+    const clearLastPromptedForType = (type: CodificationType) => {
+        const prefix = `${type}-`;
+        Object.keys(lastPromptedRef.current).forEach((k) => {
+            if (k.startsWith(prefix)) delete lastPromptedRef.current[k];
+        });
+    };
+
+    const maybePromptNewCodification = (type: CodificationType, index: number, rawId: string): boolean => {
+        const prefix = extractCodificationPrefix(rawId);
+        if (!prefix) return false;
+
+        const exists = codifications.some((c) => c.code.toUpperCase() === prefix);
+        const key = `${type}-${index}`;
+        if (!exists && lastPromptedRef.current[key] !== prefix) {
+            lastPromptedRef.current[key] = prefix;
+            activeModalRef.current = true;
+            setCreateCodifModal({
+                isOpen: true,
+                initialCode: prefix,
+                lockedType: type,
+                rowIndex: index,
+            });
+            return true;
+        }
+        return false;
+    };
+
+    const openCodificationPicker = (type: CodificationType) => {
+        if (!selectedIdInput || selectedIdInput.type !== type) return;
+        activeModalRef.current = true;
+        setPickerTarget({ type, index: selectedIdInput.index });
+    };
+
+    const handleClosePicker = () => {
+        const target = pickerTarget;
+        activeModalRef.current = false;
+        setPickerTarget(null);
+        if (target) {
+            window.setTimeout(() => {
+                if (activeModalRef.current) return;
+                const el = document.getElementById(getRowIdInputElementId(target.type, target.index)) as HTMLInputElement | null;
+                if (el) {
+                    el.focus();
+                    el.setSelectionRange(el.value.length, el.value.length);
+                }
+            }, 40);
+        }
+    };
+
+    const handleSelectCodification = (codif: CatalogCodification) => {
+        if (!pickerTarget) return;
+        const { type, index } = pickerTarget;
+        const currentId = getCurrentRowId(type, index);
+        const updatedId = applyCodificationToId(currentId, codif.code);
+        setCurrentRowId(type, index, updatedId);
+        lastPromptedRef.current[`${type}-${index}`] = codif.code.toUpperCase();
+        activeModalRef.current = false;
+        setPickerTarget(null);
+        focusInputAtEnd(getRowIdInputElementId(type, index));
+    };
+
+    const handleRequestCreateFromPicker = () => {
+        if (!pickerTarget) return;
+        const { type, index } = pickerTarget;
+        activeModalRef.current = true;
+        setPickerTarget(null);
+        setCreateCodifModal({
+            isOpen: true,
+            initialCode: '',
+            lockedType: type,
+            rowIndex: index,
+        });
+    };
+
+    const handleCodificationCreated = (created: CatalogCodification) => {
+        setCodifications((prev) =>
+            [...prev, created].sort((a, b) => a.code.localeCompare(b.code))
+        );
+        if (!createCodifModal) return;
+
+        const { lockedType, rowIndex } = createCodifModal;
+        const key = `${lockedType}-${rowIndex}`;
+        lastPromptedRef.current[key] = created.code.toUpperCase();
+
+        const currentTrimmed = getCurrentRowId(lockedType, rowIndex).trim();
+        const existingPrefix = extractCodificationPrefix(currentTrimmed);
+        const needsSuffix =
+            !currentTrimmed ||
+            !existingPrefix ||
+            existingPrefix !== created.code.toUpperCase() ||
+            currentTrimmed.toUpperCase() === created.code.toUpperCase() ||
+            currentTrimmed.endsWith('-');
+
+        if (needsSuffix) {
+            setCurrentRowId(lockedType, rowIndex, applyCodificationToId(currentTrimmed, created.code));
+            focusInputAtEnd(getRowIdInputElementId(lockedType, rowIndex));
+        } else {
+            focusElement(getRowDescInputElementId(lockedType, rowIndex));
+        }
+    };
+
+    const handleCloseCreateCodifModal = () => {
+        activeModalRef.current = false;
+        setCreateCodifModal(null);
+    };
+
+    // ==========================================
     // MATERIALES (ID + BÚSQUEDA POR DESCRIPCIÓN)
     // ==========================================
     const getFilteredMaterials = (query: string) => {
@@ -184,6 +366,8 @@ export default function ApuForm() {
     };
     const removeMaterial = (index: number) => {
         setMaterials(materials.filter((_, i) => i !== index));
+        if (selectedIdInput?.type === 'mat') setSelectedIdInput(null);
+        clearLastPromptedForType('mat');
         closeDropdown();
     };
     const updateMaterial = (index: number, field: string, value: string | number | boolean) => {
@@ -225,7 +409,10 @@ export default function ApuForm() {
                 isNew: true,
             };
             setMaterials(newMats);
-            focusElement(`input-material-desc-${index}`);
+            const prompted = maybePromptNewCodification('mat', index, trimmed);
+            if (!prompted) {
+                focusElement(`input-material-desc-${index}`);
+            }
         }
     };
     const handleMaterialDescChange = (index: number, value: string) => {
@@ -290,6 +477,8 @@ export default function ApuForm() {
     };
     const removeEquipment = (index: number) => {
         setEquipments(equipments.filter((_, i) => i !== index));
+        if (selectedIdInput?.type === 'equ') setSelectedIdInput(null);
+        clearLastPromptedForType('equ');
         closeDropdown();
     };
     const updateEquipment = (index: number, field: string, value: string | number | boolean) => {
@@ -331,7 +520,10 @@ export default function ApuForm() {
                 isNew: true,
             };
             setEquipments(newEqs);
-            focusElement(`input-equipment-desc-${index}`);
+            const prompted = maybePromptNewCodification('equ', index, trimmed);
+            if (!prompted) {
+                focusElement(`input-equipment-desc-${index}`);
+            }
         }
     };
     const handleEquipmentDescChange = (index: number, value: string) => {
@@ -396,6 +588,8 @@ export default function ApuForm() {
     };
     const removeLabor = (index: number) => {
         setLabors(labors.filter((_, i) => i !== index));
+        if (selectedIdInput?.type === 'mdo') setSelectedIdInput(null);
+        clearLastPromptedForType('mdo');
         closeDropdown();
     };
     const updateLabor = (index: number, field: string, value: string | number | boolean) => {
@@ -435,7 +629,10 @@ export default function ApuForm() {
                 isNew: true,
             };
             setLabors(newLabs);
-            focusElement(`input-labor-desc-${index}`);
+            const prompted = maybePromptNewCodification('mdo', index, trimmed);
+            if (!prompted) {
+                focusElement(`input-labor-desc-${index}`);
+            }
         }
     };
     const handleLaborDescChange = (index: number, value: string) => {
@@ -671,23 +868,48 @@ export default function ApuForm() {
 
                 {/* MATERIALES */}
                 <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
-                    <h3 className="text-lg text-base-content font-medium mb-4 flex items-center gap-2"><span>🔧</span> Materiales</h3>
+                    <div className="flex justify-between items-center gap-3 mb-4">
+                        <h3 className="text-lg text-base-content font-medium flex items-center gap-2"><span>🔧</span> Materiales</h3>
+                        <button
+                            type="button"
+                            data-codif-picker-btn="true"
+                            disabled={selectedIdInput?.type !== 'mat'}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => openCodificationPicker('mat')}
+                            className={`btn btn-sm ${selectedIdInput?.type === 'mat' ? 'btn-warning' : 'btn-disabled'}`}
+                            title={
+                                selectedIdInput?.type === 'mat'
+                                    ? 'Seleccionar codificación existente para el campo ID seleccionado'
+                                    : 'Selecciona un campo de ID de material para habilitar'
+                            }
+                        >
+                            Usar codificación
+                        </button>
+                    </div>
                     <div className="grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
                         <div>ID</div><div>Descripción</div><div>Unidad</div><div>Precio</div><div>Cantidad</div><div></div>
                     </div>
                     {materials.map((mat, index) => {
                         const isOpen = activeDropdown?.type === 'material' && activeDropdown.index === index;
                         const matches = isOpen ? getFilteredMaterials(mat.description || '') : [];
+                        const isIdSelected = selectedIdInput?.type === 'mat' && selectedIdInput.index === index;
                         return (
                             <div key={`mat-${index}`} className={`grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 mb-2 items-center p-1 rounded ${mat.isNew && 'bg-warning/10 border border-warning/30'}`}>
                                 <input
                                     id={`input-material-id-${index}`}
                                     type="text"
-                                    className={`input input-sm input-bordered w-full ${getListHighlight(originalMaterials, index, 'materialId', mat.materialId)}`}
+                                    className={`input input-sm input-bordered w-full ${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalMaterials, index, 'materialId', mat.materialId)}`}
                                     value={mat.materialId}
                                     onChange={(e) => updateMaterial(index, 'materialId', e.target.value)}
+                                    onFocus={() => setSelectedIdInput({ type: 'mat', index })}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleMaterialAutoFill(index, e.currentTarget.value); } }}
-                                    onBlur={(e) => handleMaterialAutoFill(index, e.target.value)}
+                                    onBlur={(e) => {
+                                        const related = e.relatedTarget as HTMLElement | null;
+                                        if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                        setSelectedIdInput((prev) => (prev && prev.type === 'mat' && prev.index === index ? null : prev));
+                                        if (activeModalRef.current) return;
+                                        handleMaterialAutoFill(index, e.target.value);
+                                    }}
                                     placeholder="ID"
                                 />
                                 <div className="relative">
@@ -750,23 +972,48 @@ export default function ApuForm() {
 
                 {/* EQUIPOS */}
                 <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
-                    <h3 className="text-lg text-base-content font-medium mb-4 flex items-center gap-2"><span>⚙️</span> Equipos</h3>
+                    <div className="flex justify-between items-center gap-3 mb-4">
+                        <h3 className="text-lg text-base-content font-medium flex items-center gap-2"><span>⚙️</span> Equipos</h3>
+                        <button
+                            type="button"
+                            data-codif-picker-btn="true"
+                            disabled={selectedIdInput?.type !== 'equ'}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => openCodificationPicker('equ')}
+                            className={`btn btn-sm ${selectedIdInput?.type === 'equ' ? 'btn-warning' : 'btn-disabled'}`}
+                            title={
+                                selectedIdInput?.type === 'equ'
+                                    ? 'Seleccionar codificación existente para el campo ID seleccionado'
+                                    : 'Selecciona un campo de ID de equipo para habilitar'
+                            }
+                        >
+                            Usar codificación
+                        </button>
+                    </div>
                     <div className="grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
                         <div>ID</div><div>Descripción</div><div>Precio Inicial</div><div>Factor Deprec.</div><div>Cantidad</div><div></div>
                     </div>
                     {equipments.map((eq, index) => {
                         const isOpen = activeDropdown?.type === 'equipment' && activeDropdown.index === index;
                         const matches = isOpen ? getFilteredEquipments(eq.description || '') : [];
+                        const isIdSelected = selectedIdInput?.type === 'equ' && selectedIdInput.index === index;
                         return (
                             <div key={`eq-${index}`} className={`grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 mb-2 items-center p-1 rounded ${eq.isNew && 'bg-warning/10 border border-warning/30'}`}>
                                 <input
                                     id={`input-equipment-id-${index}`}
                                     type="text"
-                                    className={`input input-sm input-bordered w-full ${getListHighlight(originalEquipments, index, 'equipmentId', eq.equipmentId)}`}
+                                    className={`input input-sm input-bordered w-full ${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalEquipments, index, 'equipmentId', eq.equipmentId)}`}
                                     value={eq.equipmentId}
                                     onChange={(e) => updateEquipment(index, 'equipmentId', e.target.value)}
+                                    onFocus={() => setSelectedIdInput({ type: 'equ', index })}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleEquipmentAutoFill(index, e.currentTarget.value); } }}
-                                    onBlur={(e) => handleEquipmentAutoFill(index, e.target.value)}
+                                    onBlur={(e) => {
+                                        const related = e.relatedTarget as HTMLElement | null;
+                                        if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                        setSelectedIdInput((prev) => (prev && prev.type === 'equ' && prev.index === index ? null : prev));
+                                        if (activeModalRef.current) return;
+                                        handleEquipmentAutoFill(index, e.target.value);
+                                    }}
                                     placeholder="ID"
                                 />
                                 <div className="relative">
@@ -829,23 +1076,48 @@ export default function ApuForm() {
 
                 {/* MANO DE OBRA */}
                 <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
-                    <h3 className="text-lg text-base-content font-medium mb-4 flex items-center gap-2"><span>👷</span> Mano de Obra</h3>
+                    <div className="flex justify-between items-center gap-3 mb-4">
+                        <h3 className="text-lg text-base-content font-medium flex items-center gap-2"><span>👷</span> Mano de Obra</h3>
+                        <button
+                            type="button"
+                            data-codif-picker-btn="true"
+                            disabled={selectedIdInput?.type !== 'mdo'}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => openCodificationPicker('mdo')}
+                            className={`btn btn-sm ${selectedIdInput?.type === 'mdo' ? 'btn-warning' : 'btn-disabled'}`}
+                            title={
+                                selectedIdInput?.type === 'mdo'
+                                    ? 'Seleccionar codificación existente para el campo ID seleccionado'
+                                    : 'Selecciona un campo de ID de mano de obra para habilitar'
+                            }
+                        >
+                            Usar codificación
+                        </button>
+                    </div>
                     <div className="grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
                         <div>ID</div><div>Descripción</div><div>Salario diario</div><div>Dotación</div><div></div>
                     </div>
                     {labors.map((lab, index) => {
                         const isOpen = activeDropdown?.type === 'labor' && activeDropdown.index === index;
                         const matches = isOpen ? getFilteredLabors(lab.description || '') : [];
+                        const isIdSelected = selectedIdInput?.type === 'mdo' && selectedIdInput.index === index;
                         return (
                             <div key={`lab-${index}`} className={`grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 mb-2 items-center p-1 rounded ${lab.isNew && 'bg-warning/10 border border-warning/30'}`}>
                                 <input
                                     id={`input-labor-id-${index}`}
                                     type="text"
-                                    className={`input input-sm input-bordered w-full ${getListHighlight(originalLabors, index, 'laborId', lab.laborId)}`}
+                                    className={`input input-sm input-bordered w-full ${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalLabors, index, 'laborId', lab.laborId)}`}
                                     value={lab.laborId}
                                     onChange={(e) => updateLabor(index, 'laborId', e.target.value)}
+                                    onFocus={() => setSelectedIdInput({ type: 'mdo', index })}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLaborAutoFill(index, e.currentTarget.value); } }}
-                                    onBlur={(e) => handleLaborAutoFill(index, e.target.value)}
+                                    onBlur={(e) => {
+                                        const related = e.relatedTarget as HTMLElement | null;
+                                        if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                        setSelectedIdInput((prev) => (prev && prev.type === 'mdo' && prev.index === index ? null : prev));
+                                        if (activeModalRef.current) return;
+                                        handleLaborAutoFill(index, e.target.value);
+                                    }}
                                     placeholder="ID"
                                 />
                                 <div className="relative">
@@ -912,6 +1184,23 @@ export default function ApuForm() {
                     {isSaving ? <span className="loading loading-spinner"></span> : (isEditing ? 'Guardar Cambios' : 'Generar Servicio')}
                 </button>
             </div>
+
+            <CodificationPickerModal
+                isOpen={pickerTarget !== null}
+                type={pickerTarget?.type || 'mat'}
+                codifications={codifications}
+                onSelect={handleSelectCodification}
+                onClose={handleClosePicker}
+                onRequestCreate={handleRequestCreateFromPicker}
+            />
+
+            <CreateCodificationModal
+                isOpen={Boolean(createCodifModal?.isOpen)}
+                initialCode={createCodifModal?.initialCode || ''}
+                lockedType={createCodifModal?.lockedType}
+                onClose={handleCloseCreateCodifModal}
+                onCreated={handleCodificationCreated}
+            />
         </div>
     );
 }

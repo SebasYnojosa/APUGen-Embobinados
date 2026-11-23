@@ -8,6 +8,7 @@ public class ProcessRequestDTO {
     private String companyId;
     private String mainProcess;
     private String power;
+    private String tipoM;
     private String serial;
     private String brand;
     private String location;

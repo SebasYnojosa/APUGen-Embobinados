@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
+import { formatMotorType } from '../utils/codificationUtils';
 import type { ServiceResponseDTO } from '../types';
 
 export default function ApuDetail() {
@@ -101,11 +102,12 @@ export default function ApuDetail() {
                 <div className="bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none">
                     <h3 className="text-lg font-bold mb-4 border-b pb-2">Especificaciones del Equipo</h3>
                     <ul className="space-y-2 text-sm">
-                        <li><span className="font-semibold inline-block w-24">Obra:</span> {process.serviceRequest}</li>
-                        <li><span className="font-semibold inline-block w-24">Potencia:</span> {process.power || 'N/A'}</li>
-                        <li><span className="font-semibold inline-block w-24">Serial:</span> {process.serial || 'N/A'}</li>
-                        <li><span className="font-semibold inline-block w-24">Marca:</span> {process.brand || 'N/A'}</li>
-                        <li><span className="font-semibold inline-block w-24">Ubicación:</span> {process.location || 'N/A'}</li>
+                        <li><span className="font-semibold inline-block w-28">Obra:</span> {process.serviceRequest}</li>
+                        <li><span className="font-semibold inline-block w-28">Potencia:</span> {process.power || 'N/A'}</li>
+                        <li><span className="font-semibold inline-block w-28">Tipo de Motor:</span> {formatMotorType(process.tipoM)}</li>
+                        <li><span className="font-semibold inline-block w-28">Serial:</span> {process.serial || 'N/A'}</li>
+                        <li><span className="font-semibold inline-block w-28">Marca:</span> {process.brand || 'N/A'}</li>
+                        <li><span className="font-semibold inline-block w-28">Ubicación:</span> {process.location || 'N/A'}</li>
                     </ul>
                 </div>
                 <div className="bg-base-100 p-6 rounded-box shadow border border-base-200 print:shadow-none">
