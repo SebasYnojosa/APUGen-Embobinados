@@ -11,7 +11,7 @@ services:
     plan: free
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/apus
+    healthCheckPath: /api/health
     envVars:
       - key: DB_HOST
         fromDatabase:
@@ -37,6 +37,16 @@ services:
         value: https://*.onrender.com,http://localhost:5173
       - key: JPA_SHOW_SQL
         value: "false"
+      - key: JPA_FORMAT_SQL
+        value: "false"
+      - key: APP_JWT_SECRET
+        generateValue: true
+      - key: APP_ADMIN_USERNAME
+        value: admin
+      - key: APP_ADMIN_PASSWORD
+        sync: false
+      - key: APP_ADMIN_FULL_NAME
+        value: Administrador
 
   - type: web
     name: apu-gen-frontend

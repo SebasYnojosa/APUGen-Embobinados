@@ -143,3 +143,51 @@ export interface ServiceResponseDTO {
     socialLawsCost: number;
     totalLaborsDaily: number;
 }
+
+// ==========================================
+// AUTENTICACIÓN Y USUARIOS
+// ==========================================
+export type UserRole = 'ADMIN' | 'USER';
+
+export interface AuthUser {
+    id: string;
+    username: string;
+    fullName: string;
+    role: UserRole;
+    active: boolean;
+    mustChangePassword: boolean;
+    createdAt: string;
+}
+
+export interface LoginRequest {
+    username: string;
+    password: string;
+}
+
+export interface LoginResponse {
+    token: string;
+    user: AuthUser;
+}
+
+export interface CreateUserRequest {
+    username: string;
+    fullName: string;
+    password: string;
+    role: UserRole;
+    mustChangePassword: boolean;
+}
+
+export interface UpdateUserRequest {
+    fullName: string;
+    role: UserRole;
+}
+
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
+}
+
+export interface ResetPasswordRequest {
+    newPassword: string;
+    mustChangePassword: boolean;
+}
