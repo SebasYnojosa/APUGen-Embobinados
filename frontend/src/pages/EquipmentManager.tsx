@@ -2,17 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { catalogService } from '../services/catalogServices';
 import CodificationPickerModal from '../components/CodificationPickerModal';
 import CreateCodificationModal from '../components/CreateCodificationModal';
+import MotorTypeSelector from '../components/MotorTypeSelector';
 import {
+    ALL_MOTOR_TYPES,
     applyCodificationToId,
     extractCodificationPrefix,
+    formatMotorType,
+    parseParaTipoM,
+    serializeParaTipoM,
 } from '../utils/codificationUtils';
-import type { CatalogCodification, Equipment } from '../types';
+import type { CatalogCodification, Equipment, MotorType } from '../types';
 
 interface EquipmentFormState {
     id: string;
     description: string;
     baseValue: string;
     depreciationFactor: string;
+    paraTipoM: MotorType[];
 }
 
 const INITIAL_FORM: EquipmentFormState = {
@@ -20,6 +26,7 @@ const INITIAL_FORM: EquipmentFormState = {
     description: '',
     baseValue: '',
     depreciationFactor: '',
+    paraTipoM: [],
 };
 
 export default function EquipmentManager() {
@@ -113,6 +120,7 @@ export default function EquipmentManager() {
             description: equ.description,
             baseValue: String(equ.baseValue),
             depreciationFactor: String(equ.depreciationFactor),
+            paraTipoM: parseParaTipoM(equ.paraTipoM),
         });
         setIsModalOpen(true);
     };
@@ -200,6 +208,7 @@ export default function EquipmentManager() {
             description: currentEquipment.description.trim(),
             baseValue: parsedBaseValue,
             depreciationFactor: parsedDepreciation,
+            paraTipoM: serializeParaTipoM(currentEquipment.paraTipoM),
         };
 
         try {
@@ -232,6 +241,22 @@ export default function EquipmentManager() {
         } catch (err: any) {
             setError(err.response?.data?.message || 'No se puede eliminar el equipo porque está en uso.');
         }
+    };
+
+    const renderMotorTypeBadges = (paraTipoM?: string) => {
+        const parsed = parseParaTipoM(paraTipoM);
+        if (parsed.length === ALL_MOTOR_TYPES.length) {
+            return <span className="badge badge-success badge-outline badge-sm">Todos</span>;
+        }
+        return (
+            <div className="flex flex-wrap gap-1">
+                {parsed.map((t) => (
+                    <span key={t} className="badge badge-info badge-outline badge-sm">
+                        {formatMotorType(t)}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -267,19 +292,20 @@ export default function EquipmentManager() {
                             <th>Descripción</th>
                             <th>Precio Base</th>
                             <th>F. Depreciación</th>
+                            <th>Tipo de Motor</th>
                             <th className="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-6">
+                                <td colSpan={6} className="text-center py-6">
                                     Cargando equipos...
                                 </td>
                             </tr>
                         ) : equipments.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-6">
+                                <td colSpan={6} className="text-center py-6">
                                     No hay equipos registrados.
                                 </td>
                             </tr>
@@ -294,6 +320,7 @@ export default function EquipmentManager() {
                                         </span>
                                     </td>
                                     <td>{equ.depreciationFactor.toFixed(6)}</td>
+                                    <td>{renderMotorTypeBadges(equ.paraTipoM)}</td>
                                     <td className="text-center space-x-2">
                                         <button
                                             className="btn btn-xs btn-outline btn-info"
@@ -427,6 +454,12 @@ export default function EquipmentManager() {
                                     required
                                 />
                             </div>
+                            <MotorTypeSelector
+                                value={currentEquipment.paraTipoM}
+                                onChange={(next) =>
+                                    setCurrentEquipment((prev) => ({ ...prev, paraTipoM: next }))
+                                }
+                            />
                             <div className="modal-action">
                                 <button type="submit" className="btn btn-primary">
                                     {isEditing ? 'Actualizar' : 'Guardar'}

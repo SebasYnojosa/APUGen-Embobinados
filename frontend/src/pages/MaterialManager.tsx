@@ -2,17 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { catalogService } from '../services/catalogServices';
 import CodificationPickerModal from '../components/CodificationPickerModal';
 import CreateCodificationModal from '../components/CreateCodificationModal';
+import MotorTypeSelector from '../components/MotorTypeSelector';
 import {
+    ALL_MOTOR_TYPES,
     applyCodificationToId,
     extractCodificationPrefix,
+    formatMotorType,
+    parseParaTipoM,
+    serializeParaTipoM,
 } from '../utils/codificationUtils';
-import type { CatalogCodification, Material } from '../types';
+import type { CatalogCodification, Material, MotorType } from '../types';
 
 interface MaterialFormState {
     id: string;
     description: string;
     unit: string;
     baseCost: string;
+    paraTipoM: MotorType[];
 }
 
 const INITIAL_FORM: MaterialFormState = {
@@ -20,6 +26,7 @@ const INITIAL_FORM: MaterialFormState = {
     description: '',
     unit: '',
     baseCost: '',
+    paraTipoM: [],
 };
 
 export default function MaterialManager() {
@@ -113,6 +120,7 @@ export default function MaterialManager() {
             description: mat.description,
             unit: mat.unit,
             baseCost: String(mat.baseCost),
+            paraTipoM: parseParaTipoM(mat.paraTipoM),
         });
         setIsModalOpen(true);
     };
@@ -188,6 +196,7 @@ export default function MaterialManager() {
             description: currentMaterial.description.trim(),
             unit: currentMaterial.unit.trim(),
             baseCost: parsedCost,
+            paraTipoM: serializeParaTipoM(currentMaterial.paraTipoM),
         };
 
         try {
@@ -220,6 +229,22 @@ export default function MaterialManager() {
         } catch (err: any) {
             setError(err.response?.data?.message || 'No se puede eliminar el material porque está en uso.');
         }
+    };
+
+    const renderMotorTypeBadges = (paraTipoM?: string) => {
+        const parsed = parseParaTipoM(paraTipoM);
+        if (parsed.length === ALL_MOTOR_TYPES.length) {
+            return <span className="badge badge-success badge-outline badge-sm">Todos</span>;
+        }
+        return (
+            <div className="flex flex-wrap gap-1">
+                {parsed.map((t) => (
+                    <span key={t} className="badge badge-info badge-outline badge-sm">
+                        {formatMotorType(t)}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -255,19 +280,20 @@ export default function MaterialManager() {
                             <th>Descripción</th>
                             <th>Unidad</th>
                             <th>Costo Base</th>
+                            <th>Tipo de Motor</th>
                             <th className="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-6">
+                                <td colSpan={6} className="text-center py-6">
                                     Cargando materiales...
                                 </td>
                             </tr>
                         ) : materials.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-6">
+                                <td colSpan={6} className="text-center py-6">
                                     No hay materiales registrados.
                                 </td>
                             </tr>
@@ -280,6 +306,7 @@ export default function MaterialManager() {
                                         <span className="badge badge-ghost">{mat.unit}</span>
                                     </td>
                                     <td>${mat.baseCost.toFixed(2)}</td>
+                                    <td>{renderMotorTypeBadges(mat.paraTipoM)}</td>
                                     <td className="text-center space-x-2">
                                         <button
                                             className="btn btn-xs btn-outline btn-info"
@@ -412,6 +439,12 @@ export default function MaterialManager() {
                                     required
                                 />
                             </div>
+                            <MotorTypeSelector
+                                value={currentMaterial.paraTipoM}
+                                onChange={(next) =>
+                                    setCurrentMaterial((prev) => ({ ...prev, paraTipoM: next }))
+                                }
+                            />
                             <div className="modal-action">
                                 <button type="submit" className="btn btn-primary">
                                     {isEditing ? 'Actualizar' : 'Guardar'}

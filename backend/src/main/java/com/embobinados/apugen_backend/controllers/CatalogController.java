@@ -10,6 +10,7 @@ import com.embobinados.apugen_backend.repository.CompanyRepository;
 import com.embobinados.apugen_backend.repository.EquipmentRepository;
 import com.embobinados.apugen_backend.repository.LaborRepository;
 import com.embobinados.apugen_backend.repository.MaterialRepository;
+import com.embobinados.apugen_backend.utilz.MotorTypeUtil;
 import com.embobinados.apugen_backend.utilz.StringUtilz;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -147,6 +148,7 @@ public class CatalogController {
         if (materialRepository.existsById(material.getId())) {
             throw new RuntimeException("Ya existe un material registrado con el ID: " + material.getId());
         }
+        material.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(material.getParaTipoM()));
         return ResponseEntity.ok(materialRepository.save(material));
     }
 
@@ -162,6 +164,7 @@ public class CatalogController {
         material.setDescription(detalles.getDescription());
         material.setUnit(detalles.getUnit());
         material.setBaseCost(detalles.getBaseCost());
+        material.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(detalles.getParaTipoM()));
 
         return ResponseEntity.ok(materialRepository.save(material));
     }
@@ -223,6 +226,7 @@ public class CatalogController {
             throw new RuntimeException("Ya existe un equipo registrado con el ID: " + equipo.getId());
         }
         validarFactorDepreciacion(equipo.getDepreciationFactor());
+        equipo.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(equipo.getParaTipoM()));
         return ResponseEntity.ok(equipmentRepository.save(equipo));
     }
 
@@ -240,6 +244,7 @@ public class CatalogController {
         equipo.setDescription(detalles.getDescription());
         equipo.setBaseValue(detalles.getBaseValue());
         equipo.setDepreciationFactor(detalles.getDepreciationFactor());
+        equipo.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(detalles.getParaTipoM()));
 
         return ResponseEntity.ok(equipmentRepository.save(equipo));
     }
@@ -298,6 +303,7 @@ public class CatalogController {
         if (laborRepository.existsById(cargo.getId())) {
             throw new RuntimeException("Ya existe un cargo registrado con el ID: " + cargo.getId());
         }
+        cargo.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(cargo.getParaTipoM()));
         return ResponseEntity.ok(laborRepository.save(cargo));
     }
 
@@ -308,10 +314,11 @@ public class CatalogController {
             @RequestBody Labor detalles
     ) {
         Labor cargo = laborRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No se encontró el equipo con ID: " + id));
+                .orElseThrow(() -> new RuntimeException("No se encontró el cargo con ID: " + id));
 
         cargo.setDescription(detalles.getDescription());
         cargo.setBaseDailyWage(detalles.getBaseDailyWage());
+        cargo.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(detalles.getParaTipoM()));
 
         return ResponseEntity.ok(laborRepository.save(cargo));
     }

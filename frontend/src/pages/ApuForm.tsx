@@ -5,8 +5,12 @@ import { apuService } from '../services/apuServices';
 import CodificationPickerModal from '../components/CodificationPickerModal';
 import CreateCodificationModal from '../components/CreateCodificationModal';
 import {
+    ALL_MOTOR_TYPES_VALUE,
     applyCodificationToId,
     extractCodificationPrefix,
+    formatMotorType,
+    formatParaTipoMLabels,
+    isItemCompatibleWithMotorType,
 } from '../utils/codificationUtils';
 import type {
     Material,
@@ -352,12 +356,82 @@ export default function ApuForm() {
     };
 
     // ==========================================
+    // COMPATIBILIDAD POR TIPO DE MOTOR DE LA OBRA
+    // ==========================================
+    const processMotorType = parentProcess?.tipoM || '';
+    const incompatibleInputClass = 'input-error !border-error !bg-error/10 !text-error';
+
+    const getMaterialCatalogMatch = (mat: any): Material | undefined => {
+        const id = String(mat.materialId || '').trim().toLowerCase();
+        if (id) {
+            return catalogMaterials.find((m) => m.id.toLowerCase() === id);
+        }
+        if (!mat.isNew) {
+            const desc = normalizeText(String(mat.description || ''));
+            if (desc) {
+                const exactMatches = catalogMaterials.filter((m) => normalizeText(m.description) === desc);
+                if (
+                    exactMatches.length > 0 &&
+                    exactMatches.every((m) => !isItemCompatibleWithMotorType(m.paraTipoM, processMotorType))
+                ) {
+                    return exactMatches[0];
+                }
+            }
+        }
+        return undefined;
+    };
+
+    const getEquipmentCatalogMatch = (eq: any): Equipment | undefined => {
+        const id = String(eq.equipmentId || '').trim().toLowerCase();
+        if (id) {
+            return catalogEquipments.find((e) => e.id.toLowerCase() === id);
+        }
+        if (!eq.isNew) {
+            const desc = normalizeText(String(eq.description || ''));
+            if (desc) {
+                const exactMatches = catalogEquipments.filter((e) => normalizeText(e.description) === desc);
+                if (
+                    exactMatches.length > 0 &&
+                    exactMatches.every((e) => !isItemCompatibleWithMotorType(e.paraTipoM, processMotorType))
+                ) {
+                    return exactMatches[0];
+                }
+            }
+        }
+        return undefined;
+    };
+
+    const getLaborCatalogMatch = (lab: any): Labor | undefined => {
+        const id = String(lab.laborId || '').trim().toLowerCase();
+        if (id) {
+            return catalogLabors.find((l) => l.id.toLowerCase() === id);
+        }
+        if (!lab.isNew) {
+            const desc = normalizeText(String(lab.description || ''));
+            if (desc) {
+                const exactMatches = catalogLabors.filter((l) => normalizeText(l.description) === desc);
+                if (
+                    exactMatches.length > 0 &&
+                    exactMatches.every((l) => !isItemCompatibleWithMotorType(l.paraTipoM, processMotorType))
+                ) {
+                    return exactMatches[0];
+                }
+            }
+        }
+        return undefined;
+    };
+
+    // ==========================================
     // MATERIALES (ID + BÚSQUEDA POR DESCRIPCIÓN)
     // ==========================================
     const getFilteredMaterials = (query: string) => {
         const normalized = normalizeText(query);
         if (!normalized) return [];
-        return catalogMaterials.filter(m => normalizeText(m.description).startsWith(normalized));
+        return catalogMaterials.filter(
+            (m) =>
+                isItemCompatibleWithMotorType(m.paraTipoM, processMotorType) &&
+                normalizeText(m.description).startsWith(normalized)
+        );
     };
 
     const addMaterial = () => {
@@ -387,7 +461,9 @@ export default function ApuForm() {
         };
         setMaterials(newMats);
         closeDropdown();
-        focusElement(`input-material-qty-${index}`);
+        if (isItemCompatibleWithMotorType(found.paraTipoM, processMotorType)) {
+            focusElement(`input-material-qty-${index}`);
+        }
     };
     const handleMaterialAutoFill = (index: number, idToSearch: string) => {
         const trimmed = idToSearch.trim();
@@ -468,7 +544,11 @@ export default function ApuForm() {
     const getFilteredEquipments = (query: string) => {
         const normalized = normalizeText(query);
         if (!normalized) return [];
-        return catalogEquipments.filter(eq => normalizeText(eq.description).startsWith(normalized));
+        return catalogEquipments.filter(
+            (eq) =>
+                isItemCompatibleWithMotorType(eq.paraTipoM, processMotorType) &&
+                normalizeText(eq.description).startsWith(normalized)
+        );
     };
 
     const addEquipment = () => {
@@ -498,7 +578,9 @@ export default function ApuForm() {
         };
         setEquipments(newEqs);
         closeDropdown();
-        focusElement(`input-equipment-qty-${index}`);
+        if (isItemCompatibleWithMotorType(found.paraTipoM, processMotorType)) {
+            focusElement(`input-equipment-qty-${index}`);
+        }
     };
     const handleEquipmentAutoFill = (index: number, idToSearch: string) => {
         const trimmed = idToSearch.trim();
@@ -579,7 +661,11 @@ export default function ApuForm() {
     const getFilteredLabors = (query: string) => {
         const normalized = normalizeText(query);
         if (!normalized) return [];
-        return catalogLabors.filter(l => normalizeText(l.description).startsWith(normalized));
+        return catalogLabors.filter(
+            (l) =>
+                isItemCompatibleWithMotorType(l.paraTipoM, processMotorType) &&
+                normalizeText(l.description).startsWith(normalized)
+        );
     };
 
     const addLabor = () => {
@@ -608,7 +694,9 @@ export default function ApuForm() {
         };
         setLabors(newLabs);
         closeDropdown();
-        focusElement(`input-labor-qty-${index}`);
+        if (isItemCompatibleWithMotorType(found.paraTipoM, processMotorType)) {
+            focusElement(`input-labor-qty-${index}`);
+        }
     };
     const handleLaborAutoFill = (index: number, idToSearch: string) => {
         const trimmed = idToSearch.trim();
@@ -726,6 +814,28 @@ export default function ApuForm() {
             }
         }
 
+        for (const mat of materials) {
+            const match = getMaterialCatalogMatch(mat);
+            if (match && !isItemCompatibleWithMotorType(match.paraTipoM, processMotorType)) {
+                alert(`El material "${match.id} - ${match.description}" no corresponde a obras de motor ${formatMotorType(processMotorType)} (solo aplica para: ${formatParaTipoMLabels(match.paraTipoM)}).`);
+                return;
+            }
+        }
+        for (const eq of equipments) {
+            const match = getEquipmentCatalogMatch(eq);
+            if (match && !isItemCompatibleWithMotorType(match.paraTipoM, processMotorType)) {
+                alert(`El equipo "${match.id} - ${match.description}" no corresponde a obras de motor ${formatMotorType(processMotorType)} (solo aplica para: ${formatParaTipoMLabels(match.paraTipoM)}).`);
+                return;
+            }
+        }
+        for (const lab of labors) {
+            const match = getLaborCatalogMatch(lab);
+            if (match && !isItemCompatibleWithMotorType(match.paraTipoM, processMotorType)) {
+                alert(`El cargo "${match.id} - ${match.description}" no corresponde a obras de motor ${formatMotorType(processMotorType)} (solo aplica para: ${formatParaTipoMLabels(match.paraTipoM)}).`);
+                return;
+            }
+        }
+
         try {
             setIsSaving(true);
 
@@ -737,6 +847,7 @@ export default function ApuForm() {
                         description: mat.description.trim(),
                         unit: mat.unit.trim(),
                         baseCost: parseFloat(mat.price),
+                        paraTipoM: ALL_MOTOR_TYPES_VALUE,
                     });
                 }
             }
@@ -749,6 +860,7 @@ export default function ApuForm() {
                         description: eq.description.trim(),
                         baseValue: parseFloat(eq.baseValue),
                         depreciationFactor: parseFloat(eq.depreciation),
+                        paraTipoM: ALL_MOTOR_TYPES_VALUE,
                     });
                 }
             }
@@ -760,6 +872,7 @@ export default function ApuForm() {
                         id: lab.laborId.trim(),
                         description: lab.description.trim(),
                         baseDailyWage: parseFloat(lab.dailyWage),
+                        paraTipoM: ALL_MOTOR_TYPES_VALUE,
                     });
                 }
             }
@@ -810,8 +923,15 @@ export default function ApuForm() {
                         {isEditing ? `Editar Servicio (${editServiceId})` : 'Agregar Nuevo Servicio (APU)'}
                     </h1>
                     {parentProcess && (
-                        <p className="text-sm text-base-content/70 mt-1">
-                            Obra: <strong className="text-base-content">{parentProcess.serviceRequest}</strong> — {parentProcess.mainProcess} ({parentProcess.company?.name})
+                        <p className="text-sm text-base-content/70 mt-1 flex flex-wrap items-center gap-2">
+                            <span>
+                                Obra: <strong className="text-base-content">{parentProcess.serviceRequest}</strong> — {parentProcess.mainProcess} ({parentProcess.company?.name})
+                            </span>
+                            {processMotorType && (
+                                <span className="badge badge-info badge-outline badge-sm font-medium">
+                                    Motor: {formatMotorType(processMotorType)}
+                                </span>
+                            )}
                         </p>
                     )}
                 </div>
@@ -893,77 +1013,102 @@ export default function ApuForm() {
                         const isOpen = activeDropdown?.type === 'material' && activeDropdown.index === index;
                         const matches = isOpen ? getFilteredMaterials(mat.description || '') : [];
                         const isIdSelected = selectedIdInput?.type === 'mat' && selectedIdInput.index === index;
+                        const catMatch = getMaterialCatalogMatch(mat);
+                        const isIncompatible = Boolean(
+                            catMatch && !isItemCompatibleWithMotorType(catMatch.paraTipoM, processMotorType)
+                        );
                         return (
-                            <div key={`mat-${index}`} className={`grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 mb-2 items-center p-1 rounded ${mat.isNew && 'bg-warning/10 border border-warning/30'}`}>
-                                <input
-                                    id={`input-material-id-${index}`}
-                                    type="text"
-                                    className={`input input-sm input-bordered w-full ${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalMaterials, index, 'materialId', mat.materialId)}`}
-                                    value={mat.materialId}
-                                    onChange={(e) => updateMaterial(index, 'materialId', e.target.value)}
-                                    onFocus={() => setSelectedIdInput({ type: 'mat', index })}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleMaterialAutoFill(index, e.currentTarget.value); } }}
-                                    onBlur={(e) => {
-                                        const related = e.relatedTarget as HTMLElement | null;
-                                        if (related?.closest('[data-codif-picker-btn="true"]')) return;
-                                        setSelectedIdInput((prev) => (prev && prev.type === 'mat' && prev.index === index ? null : prev));
-                                        if (activeModalRef.current) return;
-                                        handleMaterialAutoFill(index, e.target.value);
-                                    }}
-                                    placeholder="ID"
-                                />
-                                <div className="relative">
+                            <div key={`mat-${index}`} className="mb-2">
+                                <div className={`grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 items-center p-1 rounded ${
+                                    isIncompatible
+                                        ? 'bg-error/10 border border-error'
+                                        : mat.isNew
+                                            ? 'bg-warning/10 border border-warning/30'
+                                            : ''
+                                }`}>
                                     <input
-                                        id={`input-material-desc-${index}`}
+                                        id={`input-material-id-${index}`}
                                         type="text"
-                                        className={`input input-sm input-bordered w-full ${getListHighlight(originalMaterials, index, 'description', mat.description)}`}
-                                        value={mat.description}
-                                        onChange={(e) => handleMaterialDescChange(index, e.target.value)}
-                                        onFocus={() => {
-                                            if ((mat.description || '').trim().length > 0 && !mat.materialId) {
-                                                setActiveDropdown({ type: 'material', index });
-                                            }
+                                        className={`input input-sm input-bordered w-full ${
+                                            isIncompatible
+                                                ? incompatibleInputClass
+                                                : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalMaterials, index, 'materialId', mat.materialId)}`
+                                        }`}
+                                        value={mat.materialId}
+                                        onChange={(e) => updateMaterial(index, 'materialId', e.target.value)}
+                                        onFocus={() => setSelectedIdInput({ type: 'mat', index })}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleMaterialAutoFill(index, e.currentTarget.value); } }}
+                                        onBlur={(e) => {
+                                            const related = e.relatedTarget as HTMLElement | null;
+                                            if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                            setSelectedIdInput((prev) => (prev && prev.type === 'mat' && prev.index === index ? null : prev));
+                                            if (activeModalRef.current) return;
+                                            handleMaterialAutoFill(index, e.target.value);
                                         }}
-                                        onKeyDown={(e) => handleMaterialDescKeyDown(e, index)}
-                                        placeholder="Buscar material..."
-                                        autoComplete="off"
+                                        placeholder="ID"
                                     />
-                                    {isOpen && (
-                                        <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
-                                            {matches.length > 0 ? (
-                                                matches.map((item, mIdx) => (
-                                                    <li key={item.id}>
-                                                        <button
-                                                            type="button"
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault();
-                                                                selectMaterial(index, item);
-                                                            }}
-                                                            className={`flex justify-between items-center text-left w-full gap-2 ${mIdx === highlightedIndex ? 'active' : ''}`}
-                                                        >
-                                                            <span className="font-medium truncate">{item.description}</span>
-                                                            <span className="flex items-center gap-1 shrink-0">
-                                                                <span className="text-xs opacity-70">${item.baseCost.toFixed(2)}/{item.unit}</span>
-                                                                <span className="badge badge-ghost badge-xs font-mono">{item.id}</span>
-                                                            </span>
-                                                        </button>
+                                    <div className="relative">
+                                        <input
+                                            id={`input-material-desc-${index}`}
+                                            type="text"
+                                            className={`input input-sm input-bordered w-full ${
+                                                isIncompatible
+                                                    ? incompatibleInputClass
+                                                    : getListHighlight(originalMaterials, index, 'description', mat.description)
+                                            }`}
+                                            value={mat.description}
+                                            onChange={(e) => handleMaterialDescChange(index, e.target.value)}
+                                            onFocus={() => {
+                                                if ((mat.description || '').trim().length > 0 && !mat.materialId) {
+                                                    setActiveDropdown({ type: 'material', index });
+                                                }
+                                            }}
+                                            onKeyDown={(e) => handleMaterialDescKeyDown(e, index)}
+                                            placeholder="Buscar material..."
+                                            autoComplete="off"
+                                        />
+                                        {isOpen && (
+                                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                                                {matches.length > 0 ? (
+                                                    matches.map((item, mIdx) => (
+                                                        <li key={item.id}>
+                                                            <button
+                                                                type="button"
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    selectMaterial(index, item);
+                                                                }}
+                                                                className={`flex justify-between items-center text-left w-full gap-2 ${mIdx === highlightedIndex ? 'active' : ''}`}
+                                                            >
+                                                                <span className="font-medium truncate">{item.description}</span>
+                                                                <span className="flex items-center gap-1 shrink-0">
+                                                                    <span className="text-xs opacity-70">${item.baseCost.toFixed(2)}/{item.unit}</span>
+                                                                    <span className="badge badge-ghost badge-xs font-mono">{item.id}</span>
+                                                                </span>
+                                                            </button>
+                                                        </li>
+                                                    ))
+                                                ) : (
+                                                    <li className="disabled">
+                                                        <span className="text-xs text-base-content/60 py-2">
+                                                            No hay materiales{processMotorType ? ` para motor ${formatMotorType(processMotorType)}` : ''} que empiecen por &ldquo;{(mat.description || '').trim()}&rdquo;
+                                                            {!mat.isNew && ' — ingresa un ID para crearlo nuevo.'}
+                                                        </span>
                                                     </li>
-                                                ))
-                                            ) : (
-                                                <li className="disabled">
-                                                    <span className="text-xs text-base-content/60 py-2">
-                                                        No hay materiales que empiecen por &ldquo;{(mat.description || '').trim()}&rdquo;
-                                                        {!mat.isNew && ' — ingresa un ID para crearlo nuevo.'}
-                                                    </span>
-                                                </li>
-                                            )}
-                                        </ul>
-                                    )}
+                                                )}
+                                            </ul>
+                                        )}
+                                    </div>
+                                    <input id={`input-material-unit-${index}`} type="text" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!mat.isNew ? 'bg-base-200' : '')}`} value={mat.unit} onChange={(e) => updateMaterial(index, 'unit', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-price-${index}`)} />
+                                    <input id={`input-material-price-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!mat.isNew ? 'bg-base-200' : '')}`} value={mat.price} onChange={(e) => updateMaterial(index, 'price', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-qty-${index}`)} />
+                                    <input id={`input-material-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalMaterials, index, 'quantity', mat.quantity)}`} value={mat.quantity} onChange={(e) => updateMaterial(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < materials.length ? `input-material-id-${index + 1}` : 'btn-add-material')} />
+                                    <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeMaterial(index)}>-</button>
                                 </div>
-                                <input id={`input-material-unit-${index}`} type="text" className={`input input-sm input-bordered w-full ${!mat.isNew && 'bg-base-200'}`} value={mat.unit} onChange={(e) => updateMaterial(index, 'unit', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-price-${index}`)} />
-                                <input id={`input-material-price-${index}`} type="number" className={`input input-sm input-bordered w-full ${!mat.isNew && 'bg-base-200'}`} value={mat.price} onChange={(e) => updateMaterial(index, 'price', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-qty-${index}`)} />
-                                <input id={`input-material-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${getListHighlight(originalMaterials, index, 'quantity', mat.quantity)}`} value={mat.quantity} onChange={(e) => updateMaterial(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < materials.length ? `input-material-id-${index + 1}` : 'btn-add-material')} />
-                                <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeMaterial(index)}>-</button>
+                                {isIncompatible && (
+                                    <p className="text-xs text-error font-medium mt-1 px-1">
+                                        Este material no corresponde a obras de motor {formatMotorType(processMotorType)} (solo aplica para: {formatParaTipoMLabels(catMatch?.paraTipoM)}).
+                                    </p>
+                                )}
                             </div>
                         );
                     })}
@@ -997,77 +1142,102 @@ export default function ApuForm() {
                         const isOpen = activeDropdown?.type === 'equipment' && activeDropdown.index === index;
                         const matches = isOpen ? getFilteredEquipments(eq.description || '') : [];
                         const isIdSelected = selectedIdInput?.type === 'equ' && selectedIdInput.index === index;
+                        const catMatch = getEquipmentCatalogMatch(eq);
+                        const isIncompatible = Boolean(
+                            catMatch && !isItemCompatibleWithMotorType(catMatch.paraTipoM, processMotorType)
+                        );
                         return (
-                            <div key={`eq-${index}`} className={`grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 mb-2 items-center p-1 rounded ${eq.isNew && 'bg-warning/10 border border-warning/30'}`}>
-                                <input
-                                    id={`input-equipment-id-${index}`}
-                                    type="text"
-                                    className={`input input-sm input-bordered w-full ${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalEquipments, index, 'equipmentId', eq.equipmentId)}`}
-                                    value={eq.equipmentId}
-                                    onChange={(e) => updateEquipment(index, 'equipmentId', e.target.value)}
-                                    onFocus={() => setSelectedIdInput({ type: 'equ', index })}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleEquipmentAutoFill(index, e.currentTarget.value); } }}
-                                    onBlur={(e) => {
-                                        const related = e.relatedTarget as HTMLElement | null;
-                                        if (related?.closest('[data-codif-picker-btn="true"]')) return;
-                                        setSelectedIdInput((prev) => (prev && prev.type === 'equ' && prev.index === index ? null : prev));
-                                        if (activeModalRef.current) return;
-                                        handleEquipmentAutoFill(index, e.target.value);
-                                    }}
-                                    placeholder="ID"
-                                />
-                                <div className="relative">
+                            <div key={`eq-${index}`} className="mb-2">
+                                <div className={`grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 items-center p-1 rounded ${
+                                    isIncompatible
+                                        ? 'bg-error/10 border border-error'
+                                        : eq.isNew
+                                            ? 'bg-warning/10 border border-warning/30'
+                                            : ''
+                                }`}>
                                     <input
-                                        id={`input-equipment-desc-${index}`}
+                                        id={`input-equipment-id-${index}`}
                                         type="text"
-                                        className={`input input-sm input-bordered w-full ${getListHighlight(originalEquipments, index, 'description', eq.description)}`}
-                                        value={eq.description}
-                                        onChange={(e) => handleEquipmentDescChange(index, e.target.value)}
-                                        onFocus={() => {
-                                            if ((eq.description || '').trim().length > 0 && !eq.equipmentId) {
-                                                setActiveDropdown({ type: 'equipment', index });
-                                            }
+                                        className={`input input-sm input-bordered w-full ${
+                                            isIncompatible
+                                                ? incompatibleInputClass
+                                                : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalEquipments, index, 'equipmentId', eq.equipmentId)}`
+                                        }`}
+                                        value={eq.equipmentId}
+                                        onChange={(e) => updateEquipment(index, 'equipmentId', e.target.value)}
+                                        onFocus={() => setSelectedIdInput({ type: 'equ', index })}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleEquipmentAutoFill(index, e.currentTarget.value); } }}
+                                        onBlur={(e) => {
+                                            const related = e.relatedTarget as HTMLElement | null;
+                                            if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                            setSelectedIdInput((prev) => (prev && prev.type === 'equ' && prev.index === index ? null : prev));
+                                            if (activeModalRef.current) return;
+                                            handleEquipmentAutoFill(index, e.target.value);
                                         }}
-                                        onKeyDown={(e) => handleEquipmentDescKeyDown(e, index)}
-                                        placeholder="Buscar equipo..."
-                                        autoComplete="off"
+                                        placeholder="ID"
                                     />
-                                    {isOpen && (
-                                        <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
-                                            {matches.length > 0 ? (
-                                                matches.map((item, eIdx) => (
-                                                    <li key={item.id}>
-                                                        <button
-                                                            type="button"
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault();
-                                                                selectEquipment(index, item);
-                                                            }}
-                                                            className={`flex justify-between items-center text-left w-full gap-2 ${eIdx === highlightedIndex ? 'active' : ''}`}
-                                                        >
-                                                            <span className="font-medium truncate">{item.description}</span>
-                                                            <span className="flex items-center gap-1 shrink-0">
-                                                                <span className="text-xs opacity-70">${item.baseValue.toFixed(2)}</span>
-                                                                <span className="badge badge-ghost badge-xs font-mono">{item.id}</span>
-                                                            </span>
-                                                        </button>
+                                    <div className="relative">
+                                        <input
+                                            id={`input-equipment-desc-${index}`}
+                                            type="text"
+                                            className={`input input-sm input-bordered w-full ${
+                                                isIncompatible
+                                                    ? incompatibleInputClass
+                                                    : getListHighlight(originalEquipments, index, 'description', eq.description)
+                                            }`}
+                                            value={eq.description}
+                                            onChange={(e) => handleEquipmentDescChange(index, e.target.value)}
+                                            onFocus={() => {
+                                                if ((eq.description || '').trim().length > 0 && !eq.equipmentId) {
+                                                    setActiveDropdown({ type: 'equipment', index });
+                                                }
+                                            }}
+                                            onKeyDown={(e) => handleEquipmentDescKeyDown(e, index)}
+                                            placeholder="Buscar equipo..."
+                                            autoComplete="off"
+                                        />
+                                        {isOpen && (
+                                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                                                {matches.length > 0 ? (
+                                                    matches.map((item, eIdx) => (
+                                                        <li key={item.id}>
+                                                            <button
+                                                                type="button"
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    selectEquipment(index, item);
+                                                                }}
+                                                                className={`flex justify-between items-center text-left w-full gap-2 ${eIdx === highlightedIndex ? 'active' : ''}`}
+                                                            >
+                                                                <span className="font-medium truncate">{item.description}</span>
+                                                                <span className="flex items-center gap-1 shrink-0">
+                                                                    <span className="text-xs opacity-70">${item.baseValue.toFixed(2)}</span>
+                                                                    <span className="badge badge-ghost badge-xs font-mono">{item.id}</span>
+                                                                </span>
+                                                            </button>
+                                                        </li>
+                                                    ))
+                                                ) : (
+                                                    <li className="disabled">
+                                                        <span className="text-xs text-base-content/60 py-2">
+                                                            No hay equipos{processMotorType ? ` para motor ${formatMotorType(processMotorType)}` : ''} que empiecen por &ldquo;{(eq.description || '').trim()}&rdquo;
+                                                            {!eq.isNew && ' — ingresa un ID para crearlo nuevo.'}
+                                                        </span>
                                                     </li>
-                                                ))
-                                            ) : (
-                                                <li className="disabled">
-                                                    <span className="text-xs text-base-content/60 py-2">
-                                                        No hay equipos que empiecen por &ldquo;{(eq.description || '').trim()}&rdquo;
-                                                        {!eq.isNew && ' — ingresa un ID para crearlo nuevo.'}
-                                                    </span>
-                                                </li>
-                                            )}
-                                        </ul>
-                                    )}
+                                                )}
+                                            </ul>
+                                        )}
+                                    </div>
+                                    <input id={`input-equipment-price-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!eq.isNew ? 'bg-base-200' : '')}`} value={eq.baseValue} onChange={(e) => updateEquipment(index, 'baseValue', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-deprec-${index}`)} />
+                                    <input id={`input-equipment-deprec-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!eq.isNew ? 'bg-base-200' : '')}`} value={eq.depreciation} onChange={(e) => updateEquipment(index, 'depreciation', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-qty-${index}`)} />
+                                    <input id={`input-equipment-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalEquipments, index, 'quantity', eq.quantity)}`} value={eq.quantity} onChange={(e) => updateEquipment(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < equipments.length ? `input-equipment-id-${index + 1}` : 'btn-add-equipment')} />
+                                    <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeEquipment(index)}>-</button>
                                 </div>
-                                <input id={`input-equipment-price-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${!eq.isNew && 'bg-base-200'}`} value={eq.baseValue} onChange={(e) => updateEquipment(index, 'baseValue', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-deprec-${index}`)} />
-                                <input id={`input-equipment-deprec-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${!eq.isNew && 'bg-base-200'}`} value={eq.depreciation} onChange={(e) => updateEquipment(index, 'depreciation', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-qty-${index}`)} />
-                                <input id={`input-equipment-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${getListHighlight(originalEquipments, index, 'quantity', eq.quantity)}`} value={eq.quantity} onChange={(e) => updateEquipment(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < equipments.length ? `input-equipment-id-${index + 1}` : 'btn-add-equipment')} />
-                                <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeEquipment(index)}>-</button>
+                                {isIncompatible && (
+                                    <p className="text-xs text-error font-medium mt-1 px-1">
+                                        Este equipo no corresponde a obras de motor {formatMotorType(processMotorType)} (solo aplica para: {formatParaTipoMLabels(catMatch?.paraTipoM)}).
+                                    </p>
+                                )}
                             </div>
                         );
                     })}
@@ -1101,76 +1271,101 @@ export default function ApuForm() {
                         const isOpen = activeDropdown?.type === 'labor' && activeDropdown.index === index;
                         const matches = isOpen ? getFilteredLabors(lab.description || '') : [];
                         const isIdSelected = selectedIdInput?.type === 'mdo' && selectedIdInput.index === index;
+                        const catMatch = getLaborCatalogMatch(lab);
+                        const isIncompatible = Boolean(
+                            catMatch && !isItemCompatibleWithMotorType(catMatch.paraTipoM, processMotorType)
+                        );
                         return (
-                            <div key={`lab-${index}`} className={`grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 mb-2 items-center p-1 rounded ${lab.isNew && 'bg-warning/10 border border-warning/30'}`}>
-                                <input
-                                    id={`input-labor-id-${index}`}
-                                    type="text"
-                                    className={`input input-sm input-bordered w-full ${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalLabors, index, 'laborId', lab.laborId)}`}
-                                    value={lab.laborId}
-                                    onChange={(e) => updateLabor(index, 'laborId', e.target.value)}
-                                    onFocus={() => setSelectedIdInput({ type: 'mdo', index })}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLaborAutoFill(index, e.currentTarget.value); } }}
-                                    onBlur={(e) => {
-                                        const related = e.relatedTarget as HTMLElement | null;
-                                        if (related?.closest('[data-codif-picker-btn="true"]')) return;
-                                        setSelectedIdInput((prev) => (prev && prev.type === 'mdo' && prev.index === index ? null : prev));
-                                        if (activeModalRef.current) return;
-                                        handleLaborAutoFill(index, e.target.value);
-                                    }}
-                                    placeholder="ID"
-                                />
-                                <div className="relative">
+                            <div key={`lab-${index}`} className="mb-2">
+                                <div className={`grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 items-center p-1 rounded ${
+                                    isIncompatible
+                                        ? 'bg-error/10 border border-error'
+                                        : lab.isNew
+                                            ? 'bg-warning/10 border border-warning/30'
+                                            : ''
+                                }`}>
                                     <input
-                                        id={`input-labor-desc-${index}`}
+                                        id={`input-labor-id-${index}`}
                                         type="text"
-                                        className={`input input-sm input-bordered w-full ${getListHighlight(originalLabors, index, 'description', lab.description)}`}
-                                        value={lab.description}
-                                        onChange={(e) => handleLaborDescChange(index, e.target.value)}
-                                        onFocus={() => {
-                                            if ((lab.description || '').trim().length > 0 && !lab.laborId) {
-                                                setActiveDropdown({ type: 'labor', index });
-                                            }
+                                        className={`input input-sm input-bordered w-full ${
+                                            isIncompatible
+                                                ? incompatibleInputClass
+                                                : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalLabors, index, 'laborId', lab.laborId)}`
+                                        }`}
+                                        value={lab.laborId}
+                                        onChange={(e) => updateLabor(index, 'laborId', e.target.value)}
+                                        onFocus={() => setSelectedIdInput({ type: 'mdo', index })}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLaborAutoFill(index, e.currentTarget.value); } }}
+                                        onBlur={(e) => {
+                                            const related = e.relatedTarget as HTMLElement | null;
+                                            if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                            setSelectedIdInput((prev) => (prev && prev.type === 'mdo' && prev.index === index ? null : prev));
+                                            if (activeModalRef.current) return;
+                                            handleLaborAutoFill(index, e.target.value);
                                         }}
-                                        onKeyDown={(e) => handleLaborDescKeyDown(e, index)}
-                                        placeholder="Buscar cargo..."
-                                        autoComplete="off"
+                                        placeholder="ID"
                                     />
-                                    {isOpen && (
-                                        <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
-                                            {matches.length > 0 ? (
-                                                matches.map((item, lIdx) => (
-                                                    <li key={item.id}>
-                                                        <button
-                                                            type="button"
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault();
-                                                                selectLabor(index, item);
-                                                            }}
-                                                            className={`flex justify-between items-center text-left w-full gap-2 ${lIdx === highlightedIndex ? 'active' : ''}`}
-                                                        >
-                                                            <span className="font-medium truncate">{item.description}</span>
-                                                            <span className="flex items-center gap-1 shrink-0">
-                                                                <span className="text-xs opacity-70">${item.baseDailyWage.toFixed(2)}/día</span>
-                                                                <span className="badge badge-ghost badge-xs font-mono">{item.id}</span>
-                                                            </span>
-                                                        </button>
+                                    <div className="relative">
+                                        <input
+                                            id={`input-labor-desc-${index}`}
+                                            type="text"
+                                            className={`input input-sm input-bordered w-full ${
+                                                isIncompatible
+                                                    ? incompatibleInputClass
+                                                    : getListHighlight(originalLabors, index, 'description', lab.description)
+                                            }`}
+                                            value={lab.description}
+                                            onChange={(e) => handleLaborDescChange(index, e.target.value)}
+                                            onFocus={() => {
+                                                if ((lab.description || '').trim().length > 0 && !lab.laborId) {
+                                                    setActiveDropdown({ type: 'labor', index });
+                                                }
+                                            }}
+                                            onKeyDown={(e) => handleLaborDescKeyDown(e, index)}
+                                            placeholder="Buscar cargo..."
+                                            autoComplete="off"
+                                        />
+                                        {isOpen && (
+                                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                                                {matches.length > 0 ? (
+                                                    matches.map((item, lIdx) => (
+                                                        <li key={item.id}>
+                                                            <button
+                                                                type="button"
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    selectLabor(index, item);
+                                                                }}
+                                                                className={`flex justify-between items-center text-left w-full gap-2 ${lIdx === highlightedIndex ? 'active' : ''}`}
+                                                            >
+                                                                <span className="font-medium truncate">{item.description}</span>
+                                                                <span className="flex items-center gap-1 shrink-0">
+                                                                    <span className="text-xs opacity-70">${item.baseDailyWage.toFixed(2)}/día</span>
+                                                                    <span className="badge badge-ghost badge-xs font-mono">{item.id}</span>
+                                                                </span>
+                                                            </button>
+                                                        </li>
+                                                    ))
+                                                ) : (
+                                                    <li className="disabled">
+                                                        <span className="text-xs text-base-content/60 py-2">
+                                                            No hay cargos{processMotorType ? ` para motor ${formatMotorType(processMotorType)}` : ''} que empiecen por &ldquo;{(lab.description || '').trim()}&rdquo;
+                                                            {!lab.isNew && ' — ingresa un ID para crearlo nuevo.'}
+                                                        </span>
                                                     </li>
-                                                ))
-                                            ) : (
-                                                <li className="disabled">
-                                                    <span className="text-xs text-base-content/60 py-2">
-                                                        No hay cargos que empiecen por &ldquo;{(lab.description || '').trim()}&rdquo;
-                                                        {!lab.isNew && ' — ingresa un ID para crearlo nuevo.'}
-                                                    </span>
-                                                </li>
-                                            )}
-                                        </ul>
-                                    )}
+                                                )}
+                                            </ul>
+                                        )}
+                                    </div>
+                                    <input id={`input-labor-wage-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!lab.isNew ? 'bg-base-200' : '')}`} value={lab.dailyWage} onChange={(e) => updateLabor(index, 'dailyWage', e.target.value)} disabled={!lab.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-labor-qty-${index}`)} />
+                                    <input id={`input-labor-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalLabors, index, 'dotation', lab.dotation)}`} value={lab.dotation} onChange={(e) => updateLabor(index, 'dotation', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < labors.length ? `input-labor-id-${index + 1}` : 'btn-add-labor')} />
+                                    <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeLabor(index)}>-</button>
                                 </div>
-                                <input id={`input-labor-wage-${index}`} type="number" className={`input input-sm input-bordered w-full ${!lab.isNew && 'bg-base-200'}`} value={lab.dailyWage} onChange={(e) => updateLabor(index, 'dailyWage', e.target.value)} disabled={!lab.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-labor-qty-${index}`)} />
-                                <input id={`input-labor-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${getListHighlight(originalLabors, index, 'dotation', lab.dotation)}`} value={lab.dotation} onChange={(e) => updateLabor(index, 'dotation', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < labors.length ? `input-labor-id-${index + 1}` : 'btn-add-labor')} />
-                                <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeLabor(index)}>-</button>
+                                {isIncompatible && (
+                                    <p className="text-xs text-error font-medium mt-1 px-1">
+                                        Este cargo no corresponde a obras de motor {formatMotorType(processMotorType)} (solo aplica para: {formatParaTipoMLabels(catMatch?.paraTipoM)}).
+                                    </p>
+                                )}
                             </div>
                         );
                     })}

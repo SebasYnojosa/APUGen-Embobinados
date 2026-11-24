@@ -1,5 +1,6 @@
 package com.embobinados.apugen_backend.entity;
 
+import com.embobinados.apugen_backend.utilz.MotorTypeUtil;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,4 +24,13 @@ public class Material {
 
     @Column(name = "base_cost", precision = 12, scale = 2, nullable = false)
     private BigDecimal baseCost;
+
+    @Column(name = "para_tipo_m", length = 50)
+    private String paraTipoM = MotorTypeUtil.ALL_MOTOR_TYPES;
+
+    @PrePersist
+    @PreUpdate
+    private void ensureParaTipoM() {
+        this.paraTipoM = MotorTypeUtil.normalizeParaTipoM(this.paraTipoM);
+    }
 }
