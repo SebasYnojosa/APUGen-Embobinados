@@ -11,6 +11,7 @@ export interface Material {
     description: string;
     unit: string;
     baseCost: number;
+    paraTipoM?: string;
 }
 
 export interface Equipment {
@@ -18,12 +19,14 @@ export interface Equipment {
     description: string;
     baseValue: number;
     depreciationFactor: number;
+    paraTipoM?: string;
 }
 
 export interface Labor {
     id: string;
     description: string;
     baseDailyWage: number;
+    paraTipoM?: string;
 }
 
 export type CodificationType = 'mat' | 'equ' | 'mdo';

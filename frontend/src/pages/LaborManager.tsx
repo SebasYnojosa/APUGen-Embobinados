@@ -2,22 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import { catalogService } from '../services/catalogServices';
 import CodificationPickerModal from '../components/CodificationPickerModal';
 import CreateCodificationModal from '../components/CreateCodificationModal';
+import MotorTypeSelector from '../components/MotorTypeSelector';
 import {
+    ALL_MOTOR_TYPES,
     applyCodificationToId,
     extractCodificationPrefix,
+    formatMotorType,
+    parseParaTipoM,
+    serializeParaTipoM,
 } from '../utils/codificationUtils';
-import type { CatalogCodification, Labor } from '../types';
+import type { CatalogCodification, Labor, MotorType } from '../types';
 
 interface LaborFormState {
     id: string;
     description: string;
     baseDailyWage: string;
+    paraTipoM: MotorType[];
 }
 
 const INITIAL_FORM: LaborFormState = {
     id: '',
     description: '',
     baseDailyWage: '',
+    paraTipoM: [],
 };
 
 export default function LaborManager() {
@@ -110,6 +117,7 @@ export default function LaborManager() {
             id: lab.id,
             description: lab.description,
             baseDailyWage: String(lab.baseDailyWage),
+            paraTipoM: parseParaTipoM(lab.paraTipoM),
         });
         setIsModalOpen(true);
     };
@@ -184,6 +192,7 @@ export default function LaborManager() {
             id: currentLabor.id.trim(),
             description: currentLabor.description.trim(),
             baseDailyWage: parsedWage,
+            paraTipoM: serializeParaTipoM(currentLabor.paraTipoM),
         };
 
         try {
@@ -218,6 +227,22 @@ export default function LaborManager() {
         }
     };
 
+    const renderMotorTypeBadges = (paraTipoM?: string) => {
+        const parsed = parseParaTipoM(paraTipoM);
+        if (parsed.length === ALL_MOTOR_TYPES.length) {
+            return <span className="badge badge-success badge-outline badge-sm">Todos</span>;
+        }
+        return (
+            <div className="flex flex-wrap gap-1">
+                {parsed.map((t) => (
+                    <span key={t} className="badge badge-info badge-outline badge-sm">
+                        {formatMotorType(t)}
+                    </span>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
@@ -250,19 +275,20 @@ export default function LaborManager() {
                             <th>ID</th>
                             <th>Descripción</th>
                             <th>Salario Diario</th>
+                            <th>Tipo de Motor</th>
                             <th className="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-6">
+                                <td colSpan={5} className="text-center py-6">
                                     Cargando cargos...
                                 </td>
                             </tr>
                         ) : labors.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-6">
+                                <td colSpan={5} className="text-center py-6">
                                     No hay cargos registrados.
                                 </td>
                             </tr>
@@ -272,6 +298,7 @@ export default function LaborManager() {
                                     <td className="font-semibold">{lab.id}</td>
                                     <td>{lab.description}</td>
                                     <td>${lab.baseDailyWage.toFixed(2)}</td>
+                                    <td>{renderMotorTypeBadges(lab.paraTipoM)}</td>
                                     <td className="text-center space-x-2">
                                         <button
                                             className="btn btn-xs btn-outline btn-info"
@@ -390,6 +417,12 @@ export default function LaborManager() {
                                     required
                                 />
                             </div>
+                            <MotorTypeSelector
+                                value={currentLabor.paraTipoM}
+                                onChange={(next) =>
+                                    setCurrentLabor((prev) => ({ ...prev, paraTipoM: next }))
+                                }
+                            />
                             <div className="modal-action">
                                 <button type="submit" className="btn btn-primary">
                                     {isEditing ? 'Actualizar' : 'Guardar'}

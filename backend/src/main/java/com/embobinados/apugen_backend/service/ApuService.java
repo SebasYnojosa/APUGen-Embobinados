@@ -5,6 +5,7 @@ import com.embobinados.apugen_backend.dto.ServiceResponseDTO;
 import com.embobinados.apugen_backend.entity.*;
 import com.embobinados.apugen_backend.entity.Process;
 import com.embobinados.apugen_backend.repository.*;
+import com.embobinados.apugen_backend.utilz.MotorTypeUtil;
 import com.embobinados.apugen_backend.utilz.StringUtilz;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -135,14 +136,7 @@ public class ApuService {
     }
 
     private String normalizeAndValidateMotorType(String rawTipoM) {
-        if (rawTipoM == null || rawTipoM.isBlank()) {
-            return null;
-        }
-        String normalized = rawTipoM.trim().toLowerCase();
-        if (!normalized.equals("pequeño") && !normalized.equals("mediano") && !normalized.equals("grande")) {
-            throw new RuntimeException("Tipo de motor inválido. Debe ser pequeño, mediano o grande.");
-        }
-        return normalized;
+        return MotorTypeUtil.normalizeSingleMotorType(rawTipoM);
     }
 
     @Transactional
@@ -325,11 +319,20 @@ public class ApuService {
             throw new RuntimeException("El rendimiento del servicio debe ser mayor a cero para poder calcular los costos.");
         }
 
+        String processTipoM = service.getProcess() != null ? service.getProcess().getTipoM() : null;
+
         // CALCULO DE MATERIALES
         BigDecimal totalMateriales = BigDecimal.ZERO;
         for (ServiceMaterial sm : materials) {
             Material catMat = materialRepository.findById(sm.getMaterial().getId())
                     .orElseThrow(() -> new RuntimeException("Material no encontrado: " + sm.getMaterial().getId()));
+
+            if (!MotorTypeUtil.isCompatible(catMat.getParaTipoM(), processTipoM)) {
+                throw new RuntimeException(
+                        "El material '" + catMat.getId() + "' (" + catMat.getDescription()
+                                + ") no corresponde a obras con motor tipo " + processTipoM + "."
+                );
+            }
 
             sm.setDescriptionSnapshot(catMat.getDescription());
             sm.setUnitSnapshot(catMat.getUnit());
@@ -351,6 +354,13 @@ public class ApuService {
             Equipment catEq = equipmentRepository.findById(se.getEquipment().getId())
                     .orElseThrow(() -> new RuntimeException("Equipo no encontrado: " + se.getEquipment().getId()));
 
+            if (!MotorTypeUtil.isCompatible(catEq.getParaTipoM(), processTipoM)) {
+                throw new RuntimeException(
+                        "El equipo '" + catEq.getId() + "' (" + catEq.getDescription()
+                                + ") no corresponde a obras con motor tipo " + processTipoM + "."
+                );
+            }
+
             se.setDescriptionSnapshot(catEq.getDescription());
             se.setValueApplied(catEq.getBaseValue());
             se.setDepreciationFactorApplied(catEq.getDepreciationFactor());
@@ -370,6 +380,13 @@ public class ApuService {
         for (ServiceLabor sl : labors) {
             Labor catLab = laborRepository.findById(sl.getLabor().getId())
                     .orElseThrow(() -> new RuntimeException("Mano de Obra no encontrada: " + sl.getLabor().getId()));
+
+            if (!MotorTypeUtil.isCompatible(catLab.getParaTipoM(), processTipoM)) {
+                throw new RuntimeException(
+                        "El cargo de mano de obra '" + catLab.getId() + "' (" + catLab.getDescription()
+                                + ") no corresponde a obras con motor tipo " + processTipoM + "."
+                );
+            }
 
             sl.setDescriptionSnapshot(catLab.getDescription());
             sl.setDailyWageApplied(catLab.getBaseDailyWage());

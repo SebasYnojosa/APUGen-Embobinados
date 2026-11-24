@@ -1,5 +1,6 @@
 package com.embobinados.apugen_backend.entity;
 
+import com.embobinados.apugen_backend.utilz.MotorTypeUtil;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,4 +21,13 @@ public class Labor {
 
     @Column(name = "base_daily_wage", precision = 12, scale = 2, nullable = false)
     private BigDecimal baseDailyWage;
+
+    @Column(name = "para_tipo_m", length = 50)
+    private String paraTipoM = MotorTypeUtil.ALL_MOTOR_TYPES;
+
+    @PrePersist
+    @PreUpdate
+    private void ensureParaTipoM() {
+        this.paraTipoM = MotorTypeUtil.normalizeParaTipoM(this.paraTipoM);
+    }
 }
