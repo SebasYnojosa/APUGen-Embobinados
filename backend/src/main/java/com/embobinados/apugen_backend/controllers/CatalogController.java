@@ -6,12 +6,14 @@ import com.embobinados.apugen_backend.entity.Company;
 import com.embobinados.apugen_backend.entity.Equipment;
 import com.embobinados.apugen_backend.entity.Labor;
 import com.embobinados.apugen_backend.entity.Material;
+import com.embobinados.apugen_backend.entity.Power;
 import com.embobinados.apugen_backend.repository.BrandRepository;
 import com.embobinados.apugen_backend.repository.CatalogCodificationRepository;
 import com.embobinados.apugen_backend.repository.CompanyRepository;
 import com.embobinados.apugen_backend.repository.EquipmentRepository;
 import com.embobinados.apugen_backend.repository.LaborRepository;
 import com.embobinados.apugen_backend.repository.MaterialRepository;
+import com.embobinados.apugen_backend.repository.PowerRepository;
 import com.embobinados.apugen_backend.utilz.MotorTypeUtil;
 import com.embobinados.apugen_backend.utilz.StringUtilz;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class CatalogController {
     private final LaborRepository laborRepository;
     private final CatalogCodificationRepository catalogCodificationRepository;
     private final BrandRepository brandRepository;
+    private final PowerRepository powerRepository;
 
 
 
@@ -496,6 +499,66 @@ public class CatalogController {
         String cleaned = rawName.trim();
         if (cleaned.length() > 100) {
             throw new RuntimeException("El nombre de la marca no puede superar los 100 caracteres.");
+        }
+        return cleaned;
+    }
+
+    // ==========================================
+    // GESTIÓN DE POTENCIAS
+    // ==========================================
+
+    @GetMapping("/potencias")
+    public ResponseEntity<List<Power>> getPotencias() {
+        return ResponseEntity.ok(powerRepository.findAllByOrderByNameAsc());
+    }
+
+    @PostMapping("/potencias")
+    public ResponseEntity<Power> crearPotencia(@RequestBody Power potencia) {
+        String cleanName = validarNombrePotencia(potencia != null ? potencia.getName() : null);
+        if (powerRepository.existsByNameIgnoreCase(cleanName)) {
+            throw new RuntimeException("Ya existe una potencia registrada con el nombre: " + cleanName);
+        }
+
+        Power nueva = new Power();
+        nueva.setName(cleanName);
+        return ResponseEntity.ok(powerRepository.save(nueva));
+    }
+
+    @PutMapping("/potencias")
+    public ResponseEntity<Power> actualizarPotencia(
+            @RequestParam("id") String id,
+            @RequestBody Power detalles
+    ) {
+        Power existente = powerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró la potencia con ID: " + id));
+
+        String cleanName = validarNombrePotencia(detalles != null ? detalles.getName() : null);
+        if (!existente.getName().equalsIgnoreCase(cleanName)
+                && powerRepository.existsByNameIgnoreCase(cleanName)) {
+            throw new RuntimeException("Ya existe una potencia registrada con el nombre: " + cleanName);
+        }
+
+        existente.setName(cleanName);
+        existente.touchUpdatedAt();
+        return ResponseEntity.ok(powerRepository.save(existente));
+    }
+
+    @DeleteMapping("/potencias")
+    public ResponseEntity<Void> borrarPotencia(@RequestParam("id") String id) {
+        if (!powerRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró la potencia con ID: " + id);
+        }
+        powerRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private String validarNombrePotencia(String rawName) {
+        if (rawName == null || rawName.isBlank()) {
+            throw new RuntimeException("El nombre de la potencia es obligatorio.");
+        }
+        String cleaned = rawName.trim();
+        if (cleaned.length() > 50) {
+            throw new RuntimeException("El nombre de la potencia no puede superar los 50 caracteres.");
         }
         return cleaned;
     }

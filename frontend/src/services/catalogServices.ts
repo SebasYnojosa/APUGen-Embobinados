@@ -9,6 +9,8 @@ import type {
     Equipment,
     Labor,
     Material,
+    Power,
+    PowerRequest,
 } from '../types';
 
 export const catalogService = {
@@ -51,6 +53,28 @@ export const catalogService = {
     },
     deleteBrand: async (id: string): Promise<void> => {
         await api.delete(`/catalogos/marcas?id=${encodeURIComponent(id)}`);
+    },
+
+    // ==========================================
+    // POTENCIAS
+    // ==========================================
+    getPowers: async (): Promise<Power[]> => {
+        const response = await api.get<Power[]>('/catalogos/potencias');
+        return response.data;
+    },
+    createPower: async (payload: PowerRequest): Promise<Power> => {
+        const response = await api.post<Power>('/catalogos/potencias', payload);
+        return response.data;
+    },
+    updatePower: async (id: string, payload: PowerRequest): Promise<Power> => {
+        const response = await api.put<Power>(
+            `/catalogos/potencias?id=${encodeURIComponent(id)}`,
+            payload
+        );
+        return response.data;
+    },
+    deletePower: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/potencias?id=${encodeURIComponent(id)}`);
     },
 
     // ==========================================

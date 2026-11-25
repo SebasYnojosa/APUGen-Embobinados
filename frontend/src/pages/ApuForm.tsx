@@ -1068,7 +1068,7 @@ export default function ApuForm() {
                                             autoComplete="off"
                                         />
                                         {isOpen && (
-                                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                                            <ul className="menu block w-full bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto overflow-x-hidden p-1">
                                                 {matches.length > 0 ? (
                                                     matches.map((item, mIdx) => (
                                                         <li key={item.id}>
@@ -1197,7 +1197,7 @@ export default function ApuForm() {
                                             autoComplete="off"
                                         />
                                         {isOpen && (
-                                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                                            <ul className="menu block w-full bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto overflow-x-hidden p-1">
                                                 {matches.length > 0 ? (
                                                     matches.map((item, eIdx) => (
                                                         <li key={item.id}>
@@ -1326,7 +1326,7 @@ export default function ApuForm() {
                                             autoComplete="off"
                                         />
                                         {isOpen && (
-                                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                                            <ul className="menu block w-full bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto overflow-x-hidden p-1">
                                                 {matches.length > 0 ? (
                                                     matches.map((item, lIdx) => (
                                                         <li key={item.id}>

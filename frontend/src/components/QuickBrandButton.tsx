@@ -18,18 +18,32 @@ const extractApiErrorMessage = (error: unknown, fallback: string): string => {
 interface QuickBrandButtonProps {
     existingBrands?: Brand[];
     onBrandCreated?: (brand: Brand) => void;
+    isOpen?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 export default function QuickBrandButton({
     existingBrands,
     onBrandCreated,
+    isOpen: controlledOpen,
+    onOpenChange,
 }: QuickBrandButtonProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
     const [brandName, setBrandName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const isControlled = controlledOpen !== undefined;
+    const isOpen = isControlled ? controlledOpen : internalOpen;
+
+    const setOpen = (next: boolean) => {
+        if (!isControlled) {
+            setInternalOpen(next);
+        }
+        onOpenChange?.(next);
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -44,15 +58,16 @@ export default function QuickBrandButton({
     }, [success]);
 
     const handleOpen = () => {
-        setIsOpen(true);
+        setBrandName('');
         setError(null);
         setSuccess(null);
+        setOpen(true);
     };
 
     const handleCancel = () => {
-        setIsOpen(false);
         setBrandName('');
         setError(null);
+        setOpen(false);
     };
 
     const handleCreate = async () => {
@@ -80,7 +95,7 @@ export default function QuickBrandButton({
             const created = await catalogService.createBrand({ name: trimmed });
             onBrandCreated?.(created);
             setBrandName('');
-            setIsOpen(false);
+            setOpen(false);
             setSuccess(`Marca "${created.name}" creada correctamente.`);
         } catch (err: unknown) {
             setError(
@@ -150,7 +165,7 @@ export default function QuickBrandButton({
                     </button>
                 )}
             </div>
-            {error && (
+            {isOpen && error && (
                 <p className="text-error text-xs mt-1 max-w-xs sm:text-right">
                     {error}
                 </p>

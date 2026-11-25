@@ -30,6 +30,7 @@ public class ApuService {
     private final ServiceEquipmentRepository serviceEquipmentRepository;
     private final ServiceLaborRepository serviceLaborRepository;
     private final BrandRepository brandRepository;
+    private final PowerRepository powerRepository;
 
     // ==========================================
     // GESTIÓN DE PROCESOS (OBRAS)
@@ -53,6 +54,7 @@ public class ApuService {
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada: " + process.getCompany().getId()));
         process.setCompany(company);
         process.setTipoM(normalizeAndValidateMotorType(process.getTipoM()));
+        process.setPower(resolveOrCreatePower(process.getPower()));
         process.setBrand(resolveOrCreateBrand(process.getBrand()));
 
         return processRepository.save(process);
@@ -128,7 +130,7 @@ public class ApuService {
 
         existing.setCompany(company);
         existing.setMainProcess(updatedData.getMainProcess());
-        existing.setPower(updatedData.getPower());
+        existing.setPower(resolveOrCreatePower(updatedData.getPower()));
         existing.setTipoM(normalizeAndValidateMotorType(updatedData.getTipoM()));
         existing.setSerial(updatedData.getSerial());
         existing.setBrand(resolveOrCreateBrand(updatedData.getBrand()));
@@ -136,6 +138,23 @@ public class ApuService {
         existing.touchUpdatedAt();
 
         return processRepository.save(existing);
+    }
+
+    private String resolveOrCreatePower(String rawPower) {
+        if (rawPower == null || rawPower.isBlank()) {
+            return null;
+        }
+        String cleanName = rawPower.trim();
+        if (cleanName.length() > 50) {
+            throw new RuntimeException("El nombre de la potencia no puede superar los 50 caracteres.");
+        }
+        return powerRepository.findByNameIgnoreCase(cleanName)
+                .map(Power::getName)
+                .orElseGet(() -> {
+                    Power newPower = new Power();
+                    newPower.setName(cleanName);
+                    return powerRepository.save(newPower).getName();
+                });
     }
 
     private String resolveOrCreateBrand(String rawBrand) {

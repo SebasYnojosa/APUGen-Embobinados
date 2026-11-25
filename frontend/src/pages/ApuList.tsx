@@ -4,12 +4,14 @@ import { apuService } from '../services/apuServices';
 import { formatMotorType } from '../utils/codificationUtils';
 import { formatDateTime } from '../utils/dateUtils';
 import QuickBrandButton from '../components/QuickBrandButton';
+import QuickPowerButton from '../components/QuickPowerButton';
 import type { Process } from '../types';
 
 export default function ApuList() {
     const [processes, setProcesses] = useState<Process[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [activeQuickCreate, setActiveQuickCreate] = useState<'power' | 'brand' | null>(null);
 
     const fetchProcesses = async () => {
         try {
@@ -51,7 +53,22 @@ export default function ApuList() {
                     </p>
                 </div>
                 <div className="flex flex-wrap items-start gap-2 shrink-0">
-                    <QuickBrandButton />
+                    <QuickPowerButton
+                        isOpen={activeQuickCreate === 'power'}
+                        onOpenChange={(open) =>
+                            setActiveQuickCreate((prev) =>
+                                open ? 'power' : prev === 'power' ? null : prev
+                            )
+                        }
+                    />
+                    <QuickBrandButton
+                        isOpen={activeQuickCreate === 'brand'}
+                        onOpenChange={(open) =>
+                            setActiveQuickCreate((prev) =>
+                                open ? 'brand' : prev === 'brand' ? null : prev
+                            )
+                        }
+                    />
                     <Link to="/apus/nuevo" className="btn btn-primary btn-sm whitespace-nowrap">+ Nuevo Proceso</Link>
                 </div>
             </div>

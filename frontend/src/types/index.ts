@@ -19,6 +19,17 @@ export interface BrandRequest {
     name: string;
 }
 
+export interface Power {
+    id: string;
+    name: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface PowerRequest {
+    name: string;
+}
+
 export interface Material {
     id: string;
     description: string;

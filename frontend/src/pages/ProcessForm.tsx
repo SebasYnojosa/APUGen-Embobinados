@@ -4,7 +4,8 @@ import { catalogService } from '../services/catalogServices';
 import { apuService } from '../services/apuServices';
 import { MOTOR_TYPE_OPTIONS } from '../utils/codificationUtils';
 import QuickBrandButton from '../components/QuickBrandButton';
-import type { Brand, Company, MotorType } from '../types';
+import QuickPowerButton from '../components/QuickPowerButton';
+import type { Brand, Company, MotorType, Power } from '../types';
 
 const normalizeText = (text: string) =>
     text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -28,6 +29,7 @@ export default function ProcessForm() {
 
     const [catalogCompanies, setCatalogCompanies] = useState<Company[]>([]);
     const [catalogBrands, setCatalogBrands] = useState<Brand[]>([]);
+    const [catalogPowers, setCatalogPowers] = useState<Power[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
@@ -37,6 +39,12 @@ export default function ProcessForm() {
     const [showBrandDropdown, setShowBrandDropdown] = useState(false);
     const [brandHighlightedIndex, setBrandHighlightedIndex] = useState(-1);
     const brandDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [showPowerDropdown, setShowPowerDropdown] = useState(false);
+    const [powerHighlightedIndex, setPowerHighlightedIndex] = useState(-1);
+    const powerDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [activeQuickCreate, setActiveQuickCreate] = useState<'power' | 'brand' | null>(null);
 
     const [header, setHeader] = useState({
         serviceRequest: '',
@@ -56,12 +64,14 @@ export default function ProcessForm() {
     useEffect(() => {
         const fetchCatalogs = async () => {
             try {
-                const [comps, brands] = await Promise.all([
+                const [comps, brands, powers] = await Promise.all([
                     catalogService.getCompanies(),
                     catalogService.getBrands(),
+                    catalogService.getPowers(),
                 ]);
                 setCatalogCompanies(comps);
                 setCatalogBrands(brands);
+                setCatalogPowers(powers);
             } catch (error) {
                 console.error('Error cargando catálogos:', error);
             }
@@ -79,6 +89,10 @@ export default function ProcessForm() {
             if (brandDropdownRef.current && !brandDropdownRef.current.contains(target)) {
                 setShowBrandDropdown(false);
                 setBrandHighlightedIndex(-1);
+            }
+            if (powerDropdownRef.current && !powerDropdownRef.current.contains(target)) {
+                setShowPowerDropdown(false);
+                setPowerHighlightedIndex(-1);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -137,6 +151,23 @@ export default function ProcessForm() {
         normalizedBrandQuery.length > 0 &&
         catalogBrands.some((b) => normalizeText(b.name) === normalizedBrandQuery);
     const isNewBrandTyped = normalizedBrandQuery.length > 0 && !hasExactBrandMatch;
+
+    const normalizedPowerQuery = normalizeText(header.power);
+    const filteredPowers = normalizedPowerQuery
+        ? catalogPowers
+            .filter((p) => normalizeText(p.name).includes(normalizedPowerQuery))
+            .sort((a, b) => {
+                const aStarts = normalizeText(a.name).startsWith(normalizedPowerQuery) ? 0 : 1;
+                const bStarts = normalizeText(b.name).startsWith(normalizedPowerQuery) ? 0 : 1;
+                if (aStarts !== bStarts) return aStarts - bStarts;
+                return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+            })
+        : catalogPowers;
+
+    const hasExactPowerMatch =
+        normalizedPowerQuery.length > 0 &&
+        catalogPowers.some((p) => normalizeText(p.name) === normalizedPowerQuery);
+    const isNewPowerTyped = normalizedPowerQuery.length > 0 && !hasExactPowerMatch;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -296,6 +327,64 @@ export default function ProcessForm() {
         );
     };
 
+    const selectPower = (power: Power) => {
+        setHeader(prev => ({ ...prev, power: power.name }));
+        setShowPowerDropdown(false);
+        setPowerHighlightedIndex(-1);
+        focusElement('input-tipoM');
+    };
+
+    const handlePowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setHeader(prev => ({ ...prev, power: e.target.value }));
+        setShowPowerDropdown(true);
+        setPowerHighlightedIndex(-1);
+    };
+
+    const handlePowerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!showPowerDropdown) {
+                setShowPowerDropdown(true);
+            }
+            if (filteredPowers.length > 0) {
+                setPowerHighlightedIndex(prev => (prev + 1) % filteredPowers.length);
+            }
+            return;
+        }
+        if (e.key === 'ArrowUp' && showPowerDropdown && filteredPowers.length > 0) {
+            e.preventDefault();
+            setPowerHighlightedIndex(prev => (prev <= 0 ? filteredPowers.length - 1 : prev - 1));
+            return;
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (
+                showPowerDropdown &&
+                powerHighlightedIndex >= 0 &&
+                powerHighlightedIndex < filteredPowers.length
+            ) {
+                selectPower(filteredPowers[powerHighlightedIndex]);
+            } else {
+                setShowPowerDropdown(false);
+                setPowerHighlightedIndex(-1);
+                focusElement('input-tipoM');
+            }
+            return;
+        }
+        if (e.key === 'Escape') {
+            setShowPowerDropdown(false);
+            setPowerHighlightedIndex(-1);
+        }
+    };
+
+    const handlePowerCreated = (created: Power) => {
+        setCatalogPowers((prev) =>
+            [...prev, created].sort((a, b) =>
+                a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+            )
+        );
+    };
+
     const getHeaderHighlight = (field: keyof typeof header) => {
         if (!isEditing || !originalHeader) return '';
         return String(header[field]) !== String(originalHeader[field])
@@ -324,7 +413,7 @@ export default function ProcessForm() {
                 serviceRequest: header.serviceRequest.trim(),
                 companyId: header.companyId.trim(),
                 mainProcess: header.mainProcess.trim(),
-                power: header.power,
+                power: header.power.trim(),
                 tipoM: header.tipoM,
                 serial: header.serial,
                 brand: header.brand.trim(),
@@ -362,11 +451,29 @@ export default function ProcessForm() {
                     </p>
                 </div>
 
-                {/* BOTÓN ESQUINA: CREACIÓN RÁPIDA DE MARCA */}
-                <QuickBrandButton
-                    existingBrands={catalogBrands}
-                    onBrandCreated={handleBrandCreated}
-                />
+                {/* BOTONES ESQUINA: CREACIÓN RÁPIDA DE POTENCIA Y MARCA */}
+                <div className="flex flex-wrap items-start justify-start sm:justify-end gap-2 shrink-0">
+                    <QuickPowerButton
+                        existingPowers={catalogPowers}
+                        onPowerCreated={handlePowerCreated}
+                        isOpen={activeQuickCreate === 'power'}
+                        onOpenChange={(open) =>
+                            setActiveQuickCreate((prev) =>
+                                open ? 'power' : prev === 'power' ? null : prev
+                            )
+                        }
+                    />
+                    <QuickBrandButton
+                        existingBrands={catalogBrands}
+                        onBrandCreated={handleBrandCreated}
+                        isOpen={activeQuickCreate === 'brand'}
+                        onOpenChange={(open) =>
+                            setActiveQuickCreate((prev) =>
+                                open ? 'brand' : prev === 'brand' ? null : prev
+                            )
+                        }
+                    />
+                </div>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -448,7 +555,7 @@ export default function ProcessForm() {
                         />
 
                         {showCompanyDropdown && (
-                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto p-1">
+                            <ul className="menu block w-full bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-56 overflow-y-auto overflow-x-hidden p-1">
                                 {filteredCompanies.length > 0 ? (
                                     filteredCompanies.map((comp, idx) => (
                                         <li key={comp.id}>
@@ -483,17 +590,66 @@ export default function ProcessForm() {
                 {/* ESPECIFICACIONES DEL EQUIPO */}
                 <h2 className="text-lg font-semibold mb-3">Especificaciones del Equipo</h2>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                    <div className="form-control">
-                        <label className="label"><span className="label-text">Potencia</span></label>
+                    <div className="form-control relative" ref={powerDropdownRef}>
+                        <label className="label">
+                            <span className="label-text">
+                                Potencia
+                                {isNewPowerTyped && (
+                                    <span className="text-info text-xs font-semibold ml-1.5">(Nueva)</span>
+                                )}
+                            </span>
+                        </label>
                         <input
                             id="input-power"
                             type="text"
                             name="power"
                             value={header.power}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => handleEnterFocus(e, 'input-tipoM')}
-                            className={`input input-bordered input-sm ${getHeaderHighlight('power')}`}
+                            onChange={handlePowerChange}
+                            onFocus={() => setShowPowerDropdown(true)}
+                            onKeyDown={handlePowerKeyDown}
+                            placeholder="Buscar o escribir potencia..."
+                            autoComplete="off"
+                            maxLength={50}
+                            className={`input input-bordered input-sm w-full ${getHeaderHighlight('power')}`}
                         />
+
+                        {showPowerDropdown && (
+                            <ul className="menu block w-full bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-52 overflow-y-auto overflow-x-hidden p-1">
+                                {filteredPowers.length > 0 ? (
+                                    filteredPowers.map((power, idx) => (
+                                        <li key={power.id}>
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    selectPower(power);
+                                                }}
+                                                className={`text-left w-full text-sm ${
+                                                    idx === powerHighlightedIndex ? 'active' : ''
+                                                }`}
+                                            >
+                                                {power.name}
+                                            </button>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="disabled">
+                                        <span className="text-xs text-base-content/60 py-2">
+                                            {normalizedPowerQuery
+                                                ? `Sin coincidencias para "${header.power.trim()}"`
+                                                : 'No hay potencias registradas aún.'}
+                                        </span>
+                                    </li>
+                                )}
+                                {isNewPowerTyped && (
+                                    <li className="disabled border-t border-base-200 mt-1 pt-1">
+                                        <span className="text-xs text-info py-1">
+                                            Se creará &ldquo;{header.power.trim()}&rdquo; al guardar la obra
+                                        </span>
+                                    </li>
+                                )}
+                            </ul>
+                        )}
                     </div>
                     <div className="form-control">
                         <label className="label"><span className="label-text">Tipo de Motor</span></label>
@@ -536,7 +692,7 @@ export default function ProcessForm() {
                         />
 
                         {showBrandDropdown && (
-                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-52 overflow-y-auto p-1">
+                            <ul className="menu block w-full bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-52 overflow-y-auto overflow-x-hidden p-1">
                                 {filteredBrands.length > 0 ? (
                                     filteredBrands.map((brand, idx) => (
                                         <li key={brand.id}>
