@@ -1,10 +1,12 @@
 package com.embobinados.apugen_backend.controllers;
 
+import com.embobinados.apugen_backend.entity.Brand;
 import com.embobinados.apugen_backend.entity.CatalogCodification;
 import com.embobinados.apugen_backend.entity.Company;
 import com.embobinados.apugen_backend.entity.Equipment;
 import com.embobinados.apugen_backend.entity.Labor;
 import com.embobinados.apugen_backend.entity.Material;
+import com.embobinados.apugen_backend.repository.BrandRepository;
 import com.embobinados.apugen_backend.repository.CatalogCodificationRepository;
 import com.embobinados.apugen_backend.repository.CompanyRepository;
 import com.embobinados.apugen_backend.repository.EquipmentRepository;
@@ -34,6 +36,7 @@ public class CatalogController {
     private final EquipmentRepository equipmentRepository;
     private final LaborRepository laborRepository;
     private final CatalogCodificationRepository catalogCodificationRepository;
+    private final BrandRepository brandRepository;
 
 
 
@@ -436,5 +439,65 @@ public class CatalogController {
             throw new RuntimeException("Tipo de catálogo inválido. Debe ser 'mat', 'equ' o 'mdo'.");
         }
         return normalized;
+    }
+
+    // ==========================================
+    // GESTIÓN DE MARCAS
+    // ==========================================
+
+    @GetMapping("/marcas")
+    public ResponseEntity<List<Brand>> getMarcas() {
+        return ResponseEntity.ok(brandRepository.findAllByOrderByNameAsc());
+    }
+
+    @PostMapping("/marcas")
+    public ResponseEntity<Brand> crearMarca(@RequestBody Brand marca) {
+        String cleanName = validarNombreMarca(marca != null ? marca.getName() : null);
+        if (brandRepository.existsByNameIgnoreCase(cleanName)) {
+            throw new RuntimeException("Ya existe una marca registrada con el nombre: " + cleanName);
+        }
+
+        Brand nueva = new Brand();
+        nueva.setName(cleanName);
+        return ResponseEntity.ok(brandRepository.save(nueva));
+    }
+
+    @PutMapping("/marcas")
+    public ResponseEntity<Brand> actualizarMarca(
+            @RequestParam("id") String id,
+            @RequestBody Brand detalles
+    ) {
+        Brand existente = brandRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No se encontró la marca con ID: " + id));
+
+        String cleanName = validarNombreMarca(detalles != null ? detalles.getName() : null);
+        if (!existente.getName().equalsIgnoreCase(cleanName)
+                && brandRepository.existsByNameIgnoreCase(cleanName)) {
+            throw new RuntimeException("Ya existe una marca registrada con el nombre: " + cleanName);
+        }
+
+        existente.setName(cleanName);
+        existente.touchUpdatedAt();
+        return ResponseEntity.ok(brandRepository.save(existente));
+    }
+
+    @DeleteMapping("/marcas")
+    public ResponseEntity<Void> borrarMarca(@RequestParam("id") String id) {
+        if (!brandRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró la marca con ID: " + id);
+        }
+        brandRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private String validarNombreMarca(String rawName) {
+        if (rawName == null || rawName.isBlank()) {
+            throw new RuntimeException("El nombre de la marca es obligatorio.");
+        }
+        String cleaned = rawName.trim();
+        if (cleaned.length() > 100) {
+            throw new RuntimeException("El nombre de la marca no puede superar los 100 caracteres.");
+        }
+        return cleaned;
     }
 }

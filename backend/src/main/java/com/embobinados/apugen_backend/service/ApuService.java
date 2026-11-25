@@ -29,6 +29,7 @@ public class ApuService {
     private final ServiceMaterialRepository serviceMaterialRepository;
     private final ServiceEquipmentRepository serviceEquipmentRepository;
     private final ServiceLaborRepository serviceLaborRepository;
+    private final BrandRepository brandRepository;
 
     // ==========================================
     // GESTIÓN DE PROCESOS (OBRAS)
@@ -52,6 +53,7 @@ public class ApuService {
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada: " + process.getCompany().getId()));
         process.setCompany(company);
         process.setTipoM(normalizeAndValidateMotorType(process.getTipoM()));
+        process.setBrand(resolveOrCreateBrand(process.getBrand()));
 
         return processRepository.save(process);
     }
@@ -129,11 +131,28 @@ public class ApuService {
         existing.setPower(updatedData.getPower());
         existing.setTipoM(normalizeAndValidateMotorType(updatedData.getTipoM()));
         existing.setSerial(updatedData.getSerial());
-        existing.setBrand(updatedData.getBrand());
+        existing.setBrand(resolveOrCreateBrand(updatedData.getBrand()));
         existing.setLocation(updatedData.getLocation());
         existing.touchUpdatedAt();
 
         return processRepository.save(existing);
+    }
+
+    private String resolveOrCreateBrand(String rawBrand) {
+        if (rawBrand == null || rawBrand.isBlank()) {
+            return null;
+        }
+        String cleanName = rawBrand.trim();
+        if (cleanName.length() > 100) {
+            throw new RuntimeException("El nombre de la marca no puede superar los 100 caracteres.");
+        }
+        return brandRepository.findByNameIgnoreCase(cleanName)
+                .map(Brand::getName)
+                .orElseGet(() -> {
+                    Brand newBrand = new Brand();
+                    newBrand.setName(cleanName);
+                    return brandRepository.save(newBrand).getName();
+                });
     }
 
     private String normalizeAndValidateMotorType(String rawTipoM) {
