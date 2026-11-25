@@ -4,15 +4,17 @@ import com.embobinados.apugen_backend.utilz.MotorTypeUtil;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "materials")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Material {
+public class Material extends AuditableEntity {
     @Id
     private String id; // ID Manual
 

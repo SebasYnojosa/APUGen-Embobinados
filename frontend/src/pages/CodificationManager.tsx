@@ -5,6 +5,7 @@ import {
     CODIFICATION_TYPE_LABELS,
     CODIFICATION_TYPE_SHORT,
 } from '../utils/codificationUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import type { CatalogCodification, CodificationType } from '../types';
 
 interface CodificationFormState {
@@ -172,7 +173,7 @@ export default function CodificationManager() {
             : codifications.filter((c) => c.type === filterType);
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Codificaciones</h1>
@@ -222,52 +223,59 @@ export default function CodificationManager() {
                 <table className="table table-zebra w-full">
                     <thead>
                         <tr>
-                            <th>Código</th>
+                            <th className="whitespace-nowrap">Código</th>
                             <th>Descripción</th>
-                            <th>Tipo de Catálogo</th>
-                            <th className="text-center">Acciones</th>
+                            <th className="whitespace-nowrap">Tipo de Catálogo</th>
+                            <th className="whitespace-nowrap">Fechas</th>
+                            <th className="text-center whitespace-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-6">
+                                <td colSpan={5} className="text-center py-6">
                                     Cargando codificaciones...
                                 </td>
                             </tr>
                         ) : visibleCodifications.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-6">
+                                <td colSpan={5} className="text-center py-6">
                                     No hay codificaciones registradas.
                                 </td>
                             </tr>
                         ) : (
                             visibleCodifications.map((item) => (
                                 <tr key={item.id}>
-                                    <td>
+                                    <td className="whitespace-nowrap">
                                         <span className="badge badge-warning font-mono font-bold tracking-wider px-3 py-2.5">
                                             {item.code}
                                         </span>
                                     </td>
                                     <td>{item.description}</td>
-                                    <td>
+                                    <td className="whitespace-nowrap">
                                         <span className={`badge badge-sm ${TYPE_BADGE_CLASS[item.type]}`}>
                                             {CODIFICATION_TYPE_LABELS[item.type]}
                                         </span>
                                     </td>
-                                    <td className="text-center space-x-2">
-                                        <button
-                                            className="btn btn-xs btn-outline btn-info"
-                                            onClick={() => openEditModal(item)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            className="btn btn-xs btn-outline btn-error"
-                                            onClick={() => handleDelete(item)}
-                                        >
-                                            Eliminar
-                                        </button>
+                                    <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
+                                        <div><span className="font-semibold">Creado:</span> {formatDateTime(item.createdAt)}</div>
+                                        <div><span className="font-semibold">Act.:</span> {formatDateTime(item.updatedAt)}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <button
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                onClick={() => openEditModal(item)}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                onClick={() => handleDelete(item)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

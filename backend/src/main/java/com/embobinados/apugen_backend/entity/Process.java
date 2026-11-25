@@ -3,6 +3,7 @@ package com.embobinados.apugen_backend.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -11,9 +12,10 @@ import java.util.List;
 @Entity
 @Table(name = "processes")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Process {
+public class Process extends AuditableEntity {
     @Id
     @Column(name = "service_request", length = 20)
     private String serviceRequest; // ID Manual (Solicitud de Servicio / Obra)

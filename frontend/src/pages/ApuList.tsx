@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
 import { formatMotorType } from '../utils/codificationUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import type { Process } from '../types';
 
 export default function ApuList() {
@@ -63,14 +64,15 @@ export default function ApuList() {
                         <th>Equipo (Marca / Potencia / Tipo)</th>
                         <th className="text-center">Servicios</th>
                         <th className="text-right">Total Propuesto</th>
-                        <th className="text-center">Acciones</th>
+                        <th className="whitespace-nowrap">Fechas</th>
+                        <th className="text-center whitespace-nowrap">Acciones</th>
                     </tr>
                     </thead>
                     <tbody>
                     {loading ? (
-                        <tr><td colSpan={7} className="text-center py-6">Cargando procesos...</td></tr>
+                        <tr><td colSpan={8} className="text-center py-6">Cargando procesos...</td></tr>
                     ) : processes.length === 0 ? (
-                        <tr><td colSpan={7} className="text-center py-6">No hay procesos registrados.</td></tr>
+                        <tr><td colSpan={8} className="text-center py-6">No hay procesos registrados.</td></tr>
                     ) : (
                         processes.map((proc) => {
                             const servicesCount = proc.services?.length || 0;
@@ -86,35 +88,42 @@ export default function ApuList() {
 
                             return (
                                 <tr key={proc.serviceRequest}>
-                                    <td className="font-semibold">{proc.serviceRequest}</td>
+                                    <td className="font-semibold whitespace-nowrap">{proc.serviceRequest}</td>
                                     <td>{proc.company?.name || proc.company?.id}</td>
                                     <td>{proc.mainProcess}</td>
                                     <td className="text-sm text-base-content/70">{specSummary}</td>
                                     <td className="text-center">
                                         <span className="badge badge-neutral badge-sm">{servicesCount}</span>
                                     </td>
-                                    <td className="text-right font-bold text-primary">
+                                    <td className="text-right font-bold text-primary whitespace-nowrap">
                                         ${totalProposed.toLocaleString('en-US')}
                                     </td>
-                                    <td className="text-center space-x-2">
-                                        <Link
-                                            to={`/apus/detalle?serviceRequest=${encodeURIComponent(proc.serviceRequest)}`}
-                                            className="btn btn-xs btn-outline btn-info"
-                                        >
-                                            Ver Obra / Servicios
-                                        </Link>
-                                        <Link
-                                            to={`/apus/editar?serviceRequest=${encodeURIComponent(proc.serviceRequest)}`}
-                                            className="btn btn-xs btn-outline btn-warning"
-                                        >
-                                            Editar
-                                        </Link>
-                                        <button
-                                            className="btn btn-xs btn-outline btn-error"
-                                            onClick={() => handleDelete(proc.serviceRequest)}
-                                        >
-                                            Eliminar
-                                        </button>
+                                    <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
+                                        <div><span className="font-semibold">Creado:</span> {formatDateTime(proc.createdAt)}</div>
+                                        <div><span className="font-semibold">Act.:</span> {formatDateTime(proc.updatedAt)}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <Link
+                                                to={`/apus/detalle?serviceRequest=${encodeURIComponent(proc.serviceRequest)}`}
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                title="Ver obra y servicios"
+                                            >
+                                                Ver Obra
+                                            </Link>
+                                            <Link
+                                                to={`/apus/editar?serviceRequest=${encodeURIComponent(proc.serviceRequest)}`}
+                                                className="btn btn-xs btn-outline btn-warning whitespace-nowrap"
+                                            >
+                                                Editar
+                                            </Link>
+                                            <button
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                onClick={() => handleDelete(proc.serviceRequest)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );

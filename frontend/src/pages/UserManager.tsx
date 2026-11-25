@@ -220,7 +220,7 @@ export default function UserManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Usuarios</h1>
@@ -252,8 +252,8 @@ export default function UserManager() {
                             <th>Nombre Completo</th>
                             <th>Rol</th>
                             <th>Estado</th>
-                            <th>Creado</th>
-                            <th className="text-center">Acciones</th>
+                            <th className="whitespace-nowrap">Creado</th>
+                            <th className="text-center whitespace-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -314,25 +314,25 @@ export default function UserManager() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="text-sm text-base-content/70">
+                                        <td className="text-sm text-base-content/70 whitespace-nowrap tabular-nums">
                                             {formatCreatedAt(u.createdAt)}
                                         </td>
-                                        <td className="text-center">
-                                            <div className="flex flex-wrap justify-center gap-1.5">
+                                        <td className="whitespace-nowrap">
+                                            <div className="flex items-center justify-center gap-1.5">
                                                 <button
-                                                    className="btn btn-xs btn-outline btn-info"
+                                                    className="btn btn-xs btn-outline btn-info whitespace-nowrap"
                                                     onClick={() => openEditModal(u)}
                                                 >
                                                     Editar
                                                 </button>
                                                 <button
-                                                    className="btn btn-xs btn-outline btn-warning"
+                                                    className="btn btn-xs btn-outline btn-warning whitespace-nowrap"
                                                     onClick={() => openResetModal(u)}
                                                 >
                                                     Resetear clave
                                                 </button>
                                                 <button
-                                                    className={`btn btn-xs btn-outline ${
+                                                    className={`btn btn-xs btn-outline whitespace-nowrap ${
                                                         u.active ? 'btn-error' : 'btn-success'
                                                     }`}
                                                     disabled={isSelf}

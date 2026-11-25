@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { catalogService } from '../services/catalogServices';
+import { formatDateTime } from '../utils/dateUtils';
 import type { Company } from '../types';
 
 export default function CompanyManager() {
@@ -87,7 +88,7 @@ export default function CompanyManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
                 <div><h1 className="text-2xl font-bold">Gestión de Empresas</h1></div>
                 <button className="btn btn-primary btn-sm" onClick={openCreateModal}>+ Nueva Empresa</button>
@@ -98,14 +99,27 @@ export default function CompanyManager() {
 
             <div className="overflow-x-auto">
                 <table className="table table-zebra w-full">
-                    <thead><tr><th>ID</th><th>Nombre de la Empresa</th><th className="text-center">Acciones</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th className="whitespace-nowrap">ID</th>
+                            <th>Nombre de la Empresa</th>
+                            <th className="whitespace-nowrap">Creado</th>
+                            <th className="whitespace-nowrap">Actualizado</th>
+                            <th className="text-center whitespace-nowrap">Acciones</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                    {loading ? <tr><td colSpan={3} className="text-center py-6">Cargando empresas...</td></tr> : companies.length === 0 ? <tr><td colSpan={3} className="text-center py-6">No hay empresas registradas.</td></tr> : companies.map((comp) => (
+                    {loading ? <tr><td colSpan={5} className="text-center py-6">Cargando empresas...</td></tr> : companies.length === 0 ? <tr><td colSpan={5} className="text-center py-6">No hay empresas registradas.</td></tr> : companies.map((comp) => (
                         <tr key={comp.id}>
-                            <td className="font-semibold">{comp.id}</td><td>{comp.name}</td>
-                            <td className="text-center space-x-2">
-                                <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditModal(comp)}>Editar</button>
-                                <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDelete(comp.id)}>Eliminar</button>
+                            <td className="font-semibold whitespace-nowrap">{comp.id}</td>
+                            <td>{comp.name}</td>
+                            <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums">{formatDateTime(comp.createdAt)}</td>
+                            <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums">{formatDateTime(comp.updatedAt)}</td>
+                            <td className="whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-1.5">
+                                    <button className="btn btn-xs btn-outline btn-info whitespace-nowrap" onClick={() => openEditModal(comp)}>Editar</button>
+                                    <button className="btn btn-xs btn-outline btn-error whitespace-nowrap" onClick={() => handleDelete(comp.id)}>Eliminar</button>
+                                </div>
                             </td>
                         </tr>
                     ))}

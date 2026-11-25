@@ -398,18 +398,6 @@ export default function ProcessForm() {
                         </select>
                     </div>
                     <div className="form-control">
-                        <label className="label"><span className="label-text">Serial</span></label>
-                        <input
-                            id="input-serial"
-                            type="text"
-                            name="serial"
-                            value={header.serial}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => handleEnterFocus(e, 'input-brand')}
-                            className={`input input-bordered input-sm ${getHeaderHighlight('serial')}`}
-                        />
-                    </div>
-                    <div className="form-control">
                         <label className="label"><span className="label-text">Marca</span></label>
                         <input
                             id="input-brand"
@@ -419,6 +407,18 @@ export default function ProcessForm() {
                             onChange={handleInputChange}
                             onKeyDown={(e) => handleEnterFocus(e, 'input-location')}
                             className={`input input-bordered input-sm ${getHeaderHighlight('brand')}`}
+                        />
+                    </div>
+                    <div className="form-control">
+                        <label className="label"><span className="label-text">Serial</span></label>
+                        <input
+                            id="input-serial"
+                            type="text"
+                            name="serial"
+                            value={header.serial}
+                            onChange={handleInputChange}
+                            onKeyDown={(e) => handleEnterFocus(e, 'input-brand')}
+                            className={`input input-bordered input-sm ${getHeaderHighlight('serial')}`}
                         />
                     </div>
                     <div className="form-control">
