@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { catalogService } from '../services/catalogServices';
 import { apuService } from '../services/apuServices';
 import { MOTOR_TYPE_OPTIONS } from '../utils/codificationUtils';
+import QuickBrandButton from '../components/QuickBrandButton';
 import type { Brand, Company, MotorType } from '../types';
 
 const normalizeText = (text: string) =>
@@ -36,13 +37,6 @@ export default function ProcessForm() {
     const [showBrandDropdown, setShowBrandDropdown] = useState(false);
     const [brandHighlightedIndex, setBrandHighlightedIndex] = useState(-1);
     const brandDropdownRef = useRef<HTMLDivElement>(null);
-
-    const [isQuickBrandOpen, setIsQuickBrandOpen] = useState(false);
-    const [quickBrandName, setQuickBrandName] = useState('');
-    const [quickBrandError, setQuickBrandError] = useState<string | null>(null);
-    const [quickBrandSuccess, setQuickBrandSuccess] = useState<string | null>(null);
-    const [isCreatingBrand, setIsCreatingBrand] = useState(false);
-    const quickBrandInputRef = useRef<HTMLInputElement>(null);
 
     const [header, setHeader] = useState({
         serviceRequest: '',
@@ -90,18 +84,6 @@ export default function ProcessForm() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    useEffect(() => {
-        if (isQuickBrandOpen) {
-            quickBrandInputRef.current?.focus();
-        }
-    }, [isQuickBrandOpen]);
-
-    useEffect(() => {
-        if (!quickBrandSuccess) return;
-        const timer = setTimeout(() => setQuickBrandSuccess(null), 4000);
-        return () => clearTimeout(timer);
-    }, [quickBrandSuccess]);
 
     useEffect(() => {
         if (!editServiceRequest) return;
@@ -306,55 +288,12 @@ export default function ProcessForm() {
         }
     };
 
-    const handleOpenQuickBrand = () => {
-        setIsQuickBrandOpen(true);
-        setQuickBrandError(null);
-        setQuickBrandSuccess(null);
-    };
-
-    const handleCancelQuickBrand = () => {
-        setIsQuickBrandOpen(false);
-        setQuickBrandName('');
-        setQuickBrandError(null);
-    };
-
-    const handleQuickCreateBrand = async () => {
-        const trimmed = quickBrandName.trim();
-        if (!trimmed) {
-            setQuickBrandError('Ingresa el nombre de la marca.');
-            quickBrandInputRef.current?.focus();
-            return;
-        }
-
-        const existing = catalogBrands.find(
-            (b) => normalizeText(b.name) === normalizeText(trimmed)
+    const handleBrandCreated = (created: Brand) => {
+        setCatalogBrands((prev) =>
+            [...prev, created].sort((a, b) =>
+                a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+            )
         );
-        if (existing) {
-            setQuickBrandError(`Ya existe una marca registrada con el nombre "${existing.name}".`);
-            quickBrandInputRef.current?.focus();
-            return;
-        }
-
-        try {
-            setIsCreatingBrand(true);
-            setQuickBrandError(null);
-            const created = await catalogService.createBrand({ name: trimmed });
-            setCatalogBrands((prev) =>
-                [...prev, created].sort((a, b) =>
-                    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-                )
-            );
-            setQuickBrandName('');
-            setIsQuickBrandOpen(false);
-            setQuickBrandSuccess(`Marca "${created.name}" creada correctamente.`);
-        } catch (err: unknown) {
-            setQuickBrandError(
-                extractApiErrorMessage(err, 'No se pudo crear la marca. Verifica que no exista.')
-            );
-            quickBrandInputRef.current?.focus();
-        } finally {
-            setIsCreatingBrand(false);
-        }
     };
 
     const getHeaderHighlight = (field: keyof typeof header) => {
@@ -424,76 +363,10 @@ export default function ProcessForm() {
                 </div>
 
                 {/* BOTÓN ESQUINA: CREACIÓN RÁPIDA DE MARCA */}
-                <div className="flex flex-col items-start sm:items-end shrink-0">
-                    <div className="flex items-center gap-2">
-                        {isQuickBrandOpen && (
-                            <input
-                                ref={quickBrandInputRef}
-                                type="text"
-                                value={quickBrandName}
-                                onChange={(e) => {
-                                    setQuickBrandName(e.target.value);
-                                    if (quickBrandError) setQuickBrandError(null);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        void handleQuickCreateBrand();
-                                    } else if (e.key === 'Escape') {
-                                        e.preventDefault();
-                                        handleCancelQuickBrand();
-                                    }
-                                }}
-                                placeholder="Nombre de la marca..."
-                                maxLength={100}
-                                disabled={isCreatingBrand}
-                                className={`input input-bordered input-sm w-44 sm:w-52 ${
-                                    quickBrandError ? 'input-error' : ''
-                                }`}
-                            />
-                        )}
-                        <button
-                            type="button"
-                            onClick={
-                                isQuickBrandOpen ? () => void handleQuickCreateBrand() : handleOpenQuickBrand
-                            }
-                            disabled={isCreatingBrand}
-                            className={`btn btn-sm ${
-                                isQuickBrandOpen ? 'btn-primary' : 'btn-outline btn-primary'
-                            }`}
-                        >
-                            {isCreatingBrand ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                            ) : isQuickBrandOpen ? (
-                                'Ingresar Marca'
-                            ) : (
-                                '+ Nueva Marca'
-                            )}
-                        </button>
-                        {isQuickBrandOpen && (
-                            <button
-                                type="button"
-                                onClick={handleCancelQuickBrand}
-                                disabled={isCreatingBrand}
-                                className="btn btn-ghost btn-sm btn-square"
-                                title="Cancelar"
-                                aria-label="Cancelar creación de marca"
-                            >
-                                ✕
-                            </button>
-                        )}
-                    </div>
-                    {quickBrandError && (
-                        <p className="text-error text-xs mt-1 max-w-xs sm:text-right">
-                            {quickBrandError}
-                        </p>
-                    )}
-                    {quickBrandSuccess && (
-                        <p className="text-success text-xs mt-1 max-w-xs sm:text-right">
-                            {quickBrandSuccess}
-                        </p>
-                    )}
-                </div>
+                <QuickBrandButton
+                    existingBrands={catalogBrands}
+                    onBrandCreated={handleBrandCreated}
+                />
             </div>
 
             <form onSubmit={handleSubmit}>

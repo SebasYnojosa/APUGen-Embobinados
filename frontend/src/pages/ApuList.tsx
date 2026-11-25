@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
 import { formatMotorType } from '../utils/codificationUtils';
 import { formatDateTime } from '../utils/dateUtils';
+import QuickBrandButton from '../components/QuickBrandButton';
 import type { Process } from '../types';
 
 export default function ApuList() {
@@ -42,14 +43,17 @@ export default function ApuList() {
 
     return (
         <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Listado de Procesos (Obras)</h1>
                     <p className="text-sm text-base-content/70">
                         Órdenes de trabajo y sus servicios (APUs) registrados.
                     </p>
                 </div>
-                <Link to="/apus/nuevo" className="btn btn-primary btn-sm">+ Nuevo Proceso</Link>
+                <div className="flex flex-wrap items-start gap-2 shrink-0">
+                    <QuickBrandButton />
+                    <Link to="/apus/nuevo" className="btn btn-primary btn-sm whitespace-nowrap">+ Nuevo Proceso</Link>
+                </div>
             </div>
 
             {error && <div className="alert alert-error mb-4 shadow-sm"><span>{error}</span></div>}
