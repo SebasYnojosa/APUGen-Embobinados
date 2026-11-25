@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { apuService } from '../services/apuServices';
 import { formatMotorType } from '../utils/codificationUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import type { ServiceResponseDTO } from '../types';
 
 export default function ApuDetail() {
@@ -76,6 +77,10 @@ export default function ApuDetail() {
                     <p className="text-lg font-semibold mt-1">{service.description}</p>
                     <p className="text-base-content/70 text-sm">
                         Obra: <span className="font-semibold text-base-content">{process.serviceRequest}</span> — {process.mainProcess} (<span className="font-semibold text-base-content">{process.company?.name}</span>)
+                    </p>
+                    <p className="text-xs text-base-content/60 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                        <span><strong>Creado:</strong> {formatDateTime(service.createdAt)}</span>
+                        <span><strong>Última actualización:</strong> {formatDateTime(service.updatedAt)}</span>
                     </p>
                 </div>
                 <div className="space-x-2 print:hidden">

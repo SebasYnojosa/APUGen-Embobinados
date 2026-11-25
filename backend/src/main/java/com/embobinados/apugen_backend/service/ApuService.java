@@ -131,6 +131,7 @@ public class ApuService {
         existing.setSerial(updatedData.getSerial());
         existing.setBrand(updatedData.getBrand());
         existing.setLocation(updatedData.getLocation());
+        existing.touchUpdatedAt();
 
         return processRepository.save(existing);
     }
@@ -175,6 +176,7 @@ public class ApuService {
         service.setEquipments(safeEquipments);
         service.setLabors(safeLabors);
 
+        parentProcess.touchUpdatedAt();
         return processServiceRepository.save(service);
     }
 
@@ -257,6 +259,10 @@ public class ApuService {
         existing.getMaterials().addAll(safeMaterials);
         existing.getEquipments().addAll(safeEquipments);
         existing.getLabors().addAll(safeLabors);
+        existing.touchUpdatedAt();
+        if (existing.getProcess() != null) {
+            existing.getProcess().touchUpdatedAt();
+        }
 
         return processServiceRepository.save(existing);
     }
@@ -267,8 +273,11 @@ public class ApuService {
                 .orElseThrow(() -> new RuntimeException("No se puede eliminar: No se encontró ningún servicio con el ID " + serviceId));
 
         Process parent = existing.getProcess();
-        if (parent != null && parent.getServices() != null) {
-            parent.getServices().remove(existing);
+        if (parent != null) {
+            if (parent.getServices() != null) {
+                parent.getServices().remove(existing);
+            }
+            parent.touchUpdatedAt();
         }
         processServiceRepository.delete(existing);
     }

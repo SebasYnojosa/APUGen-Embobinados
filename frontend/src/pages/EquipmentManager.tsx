@@ -11,6 +11,7 @@ import {
     parseParaTipoM,
     serializeParaTipoM,
 } from '../utils/codificationUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import type { CatalogCodification, Equipment, MotorType } from '../types';
 
 interface EquipmentFormState {
@@ -260,7 +261,7 @@ export default function EquipmentManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Equipos</h1>
@@ -288,52 +289,59 @@ export default function EquipmentManager() {
                 <table className="table table-zebra w-full">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th className="whitespace-nowrap">ID</th>
                             <th>Descripción</th>
-                            <th>Precio Base</th>
-                            <th>F. Depreciación</th>
-                            <th>Tipo de Motor</th>
-                            <th className="text-center">Acciones</th>
+                            <th className="whitespace-nowrap">Precio Base</th>
+                            <th className="whitespace-nowrap">F. Depreciación</th>
+                            <th className="whitespace-nowrap">Tipo de Motor</th>
+                            <th className="whitespace-nowrap">Fechas</th>
+                            <th className="text-center whitespace-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="text-center py-6">
+                                <td colSpan={7} className="text-center py-6">
                                     Cargando equipos...
                                 </td>
                             </tr>
                         ) : equipments.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="text-center py-6">
+                                <td colSpan={7} className="text-center py-6">
                                     No hay equipos registrados.
                                 </td>
                             </tr>
                         ) : (
                             equipments.map((equ) => (
                                 <tr key={equ.id}>
-                                    <td className="font-semibold">{equ.id}</td>
+                                    <td className="font-semibold whitespace-nowrap">{equ.id}</td>
                                     <td>{equ.description}</td>
-                                    <td>
+                                    <td className="whitespace-nowrap">
                                         <span className="badge badge-ghost">
                                             {equ.baseValue.toFixed(2)}
                                         </span>
                                     </td>
-                                    <td>{equ.depreciationFactor.toFixed(6)}</td>
+                                    <td className="whitespace-nowrap">{equ.depreciationFactor.toFixed(6)}</td>
                                     <td>{renderMotorTypeBadges(equ.paraTipoM)}</td>
-                                    <td className="text-center space-x-2">
-                                        <button
-                                            className="btn btn-xs btn-outline btn-info"
-                                            onClick={() => openEditModal(equ)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            className="btn btn-xs btn-outline btn-error"
-                                            onClick={() => handleDelete(equ.id)}
-                                        >
-                                            Eliminar
-                                        </button>
+                                    <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
+                                        <div><span className="font-semibold">Creado:</span> {formatDateTime(equ.createdAt)}</div>
+                                        <div><span className="font-semibold">Act.:</span> {formatDateTime(equ.updatedAt)}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <button
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                onClick={() => openEditModal(equ)}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                onClick={() => handleDelete(equ.id)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

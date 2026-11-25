@@ -15,9 +15,10 @@ import java.util.List;
 @Entity
 @Table(name = "process_services")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProcessService {
+public class ProcessService extends AuditableEntity {
     @Id
     @Column(length = 40)
     private String id; // Ej: SR-2026-001-0, SR-2026-001-1

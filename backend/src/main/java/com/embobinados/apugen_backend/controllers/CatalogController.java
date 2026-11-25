@@ -89,6 +89,7 @@ public class CatalogController {
                 .orElseThrow(() -> new RuntimeException("No se encontró la empresa con ID: " + id));
 
         empresa.setName(detalles.getName());
+        empresa.touchUpdatedAt();
 
         return ResponseEntity.ok(companyRepository.save(empresa));
     }
@@ -166,6 +167,7 @@ public class CatalogController {
         material.setUnit(detalles.getUnit());
         material.setBaseCost(detalles.getBaseCost());
         material.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(detalles.getParaTipoM()));
+        material.touchUpdatedAt();
 
         return ResponseEntity.ok(materialRepository.save(material));
     }
@@ -246,6 +248,7 @@ public class CatalogController {
         equipo.setBaseValue(detalles.getBaseValue());
         equipo.setDepreciationFactor(detalles.getDepreciationFactor());
         equipo.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(detalles.getParaTipoM()));
+        equipo.touchUpdatedAt();
 
         return ResponseEntity.ok(equipmentRepository.save(equipo));
     }
@@ -320,6 +323,7 @@ public class CatalogController {
         cargo.setDescription(detalles.getDescription());
         cargo.setBaseDailyWage(detalles.getBaseDailyWage());
         cargo.setParaTipoM(MotorTypeUtil.normalizeParaTipoM(detalles.getParaTipoM()));
+        cargo.touchUpdatedAt();
 
         return ResponseEntity.ok(laborRepository.save(cargo));
     }
@@ -391,6 +395,7 @@ public class CatalogController {
         existente.setCode(normalizedCode);
         existente.setDescription(description);
         existente.setType(normalizedType);
+        existente.touchUpdatedAt();
 
         return ResponseEntity.ok(catalogCodificationRepository.save(existente));
     }

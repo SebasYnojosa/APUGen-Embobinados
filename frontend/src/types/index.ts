@@ -4,6 +4,8 @@
 export interface Company {
     id: string;
     name: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Material {
@@ -12,6 +14,8 @@ export interface Material {
     unit: string;
     baseCost: number;
     paraTipoM?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Equipment {
@@ -20,6 +24,8 @@ export interface Equipment {
     baseValue: number;
     depreciationFactor: number;
     paraTipoM?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Labor {
@@ -27,6 +33,8 @@ export interface Labor {
     description: string;
     baseDailyWage: number;
     paraTipoM?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export type CodificationType = 'mat' | 'equ' | 'mdo';
@@ -36,6 +44,8 @@ export interface CatalogCodification {
     code: string;
     description: string;
     type: CodificationType;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface CatalogCodificationRequest {
@@ -102,6 +112,9 @@ export interface ProcessService {
     utilityCostValue: number;
     calculatedUnitPrice: number;
     proposedUnitPrice: number;
+
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 // ==========================================
@@ -117,6 +130,8 @@ export interface Process {
     brand?: string;
     location?: string;
     services?: ProcessService[];
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 // ==========================================

@@ -11,6 +11,7 @@ import {
     parseParaTipoM,
     serializeParaTipoM,
 } from '../utils/codificationUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import type { CatalogCodification, Labor, MotorType } from '../types';
 
 interface LaborFormState {
@@ -244,7 +245,7 @@ export default function LaborManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Cargos</h1>
@@ -272,46 +273,53 @@ export default function LaborManager() {
                 <table className="table table-zebra w-full">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th className="whitespace-nowrap">ID</th>
                             <th>Descripción</th>
-                            <th>Salario Diario</th>
-                            <th>Tipo de Motor</th>
-                            <th className="text-center">Acciones</th>
+                            <th className="whitespace-nowrap">Salario Diario</th>
+                            <th className="whitespace-nowrap">Tipo de Motor</th>
+                            <th className="whitespace-nowrap">Fechas</th>
+                            <th className="text-center whitespace-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-6">
+                                <td colSpan={6} className="text-center py-6">
                                     Cargando cargos...
                                 </td>
                             </tr>
                         ) : labors.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-6">
+                                <td colSpan={6} className="text-center py-6">
                                     No hay cargos registrados.
                                 </td>
                             </tr>
                         ) : (
                             labors.map((lab) => (
                                 <tr key={lab.id}>
-                                    <td className="font-semibold">{lab.id}</td>
+                                    <td className="font-semibold whitespace-nowrap">{lab.id}</td>
                                     <td>{lab.description}</td>
-                                    <td>${lab.baseDailyWage.toFixed(2)}</td>
+                                    <td className="whitespace-nowrap">${lab.baseDailyWage.toFixed(2)}</td>
                                     <td>{renderMotorTypeBadges(lab.paraTipoM)}</td>
-                                    <td className="text-center space-x-2">
-                                        <button
-                                            className="btn btn-xs btn-outline btn-info"
-                                            onClick={() => openEditModal(lab)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            className="btn btn-xs btn-outline btn-error"
-                                            onClick={() => handleDelete(lab.id)}
-                                        >
-                                            Eliminar
-                                        </button>
+                                    <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
+                                        <div><span className="font-semibold">Creado:</span> {formatDateTime(lab.createdAt)}</div>
+                                        <div><span className="font-semibold">Act.:</span> {formatDateTime(lab.updatedAt)}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <button
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                onClick={() => openEditModal(lab)}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                onClick={() => handleDelete(lab.id)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

@@ -11,6 +11,7 @@ import {
     parseParaTipoM,
     serializeParaTipoM,
 } from '../utils/codificationUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import type { CatalogCodification, Material, MotorType } from '../types';
 
 interface MaterialFormState {
@@ -248,7 +249,7 @@ export default function MaterialManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-6xl mx-auto border border-base-200">
+        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Materiales</h1>
@@ -276,50 +277,57 @@ export default function MaterialManager() {
                 <table className="table table-zebra w-full">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th className="whitespace-nowrap">ID</th>
                             <th>Descripción</th>
-                            <th>Unidad</th>
-                            <th>Costo Base</th>
-                            <th>Tipo de Motor</th>
-                            <th className="text-center">Acciones</th>
+                            <th className="whitespace-nowrap">Unidad</th>
+                            <th className="whitespace-nowrap">Costo Base</th>
+                            <th className="whitespace-nowrap">Tipo de Motor</th>
+                            <th className="whitespace-nowrap">Fechas</th>
+                            <th className="text-center whitespace-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="text-center py-6">
+                                <td colSpan={7} className="text-center py-6">
                                     Cargando materiales...
                                 </td>
                             </tr>
                         ) : materials.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="text-center py-6">
+                                <td colSpan={7} className="text-center py-6">
                                     No hay materiales registrados.
                                 </td>
                             </tr>
                         ) : (
                             materials.map((mat) => (
                                 <tr key={mat.id}>
-                                    <td className="font-semibold">{mat.id}</td>
+                                    <td className="font-semibold whitespace-nowrap">{mat.id}</td>
                                     <td>{mat.description}</td>
-                                    <td>
+                                    <td className="whitespace-nowrap">
                                         <span className="badge badge-ghost">{mat.unit}</span>
                                     </td>
-                                    <td>${mat.baseCost.toFixed(2)}</td>
+                                    <td className="whitespace-nowrap">${mat.baseCost.toFixed(2)}</td>
                                     <td>{renderMotorTypeBadges(mat.paraTipoM)}</td>
-                                    <td className="text-center space-x-2">
-                                        <button
-                                            className="btn btn-xs btn-outline btn-info"
-                                            onClick={() => openEditModal(mat)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            className="btn btn-xs btn-outline btn-error"
-                                            onClick={() => handleDelete(mat.id)}
-                                        >
-                                            Eliminar
-                                        </button>
+                                    <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
+                                        <div><span className="font-semibold">Creado:</span> {formatDateTime(mat.createdAt)}</div>
+                                        <div><span className="font-semibold">Act.:</span> {formatDateTime(mat.updatedAt)}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <button
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                onClick={() => openEditModal(mat)}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                onClick={() => handleDelete(mat.id)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))
