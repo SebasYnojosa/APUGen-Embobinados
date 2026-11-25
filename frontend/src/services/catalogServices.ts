@@ -1,5 +1,7 @@
 import api from './api';
 import type {
+    Brand,
+    BrandRequest,
     CatalogCodification,
     CatalogCodificationRequest,
     CodificationType,
@@ -27,6 +29,28 @@ export const catalogService = {
     },
     deleteCompany: async (id: string): Promise<void> => {
         await api.delete(`/catalogos/empresas?id=${encodeURIComponent(id)}`);
+    },
+
+    // ==========================================
+    // MARCAS
+    // ==========================================
+    getBrands: async (): Promise<Brand[]> => {
+        const response = await api.get<Brand[]>('/catalogos/marcas');
+        return response.data;
+    },
+    createBrand: async (payload: BrandRequest): Promise<Brand> => {
+        const response = await api.post<Brand>('/catalogos/marcas', payload);
+        return response.data;
+    },
+    updateBrand: async (id: string, payload: BrandRequest): Promise<Brand> => {
+        const response = await api.put<Brand>(
+            `/catalogos/marcas?id=${encodeURIComponent(id)}`,
+            payload
+        );
+        return response.data;
+    },
+    deleteBrand: async (id: string): Promise<void> => {
+        await api.delete(`/catalogos/marcas?id=${encodeURIComponent(id)}`);
     },
 
     // ==========================================

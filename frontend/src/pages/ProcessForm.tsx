@@ -3,10 +3,20 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { catalogService } from '../services/catalogServices';
 import { apuService } from '../services/apuServices';
 import { MOTOR_TYPE_OPTIONS } from '../utils/codificationUtils';
-import type { Company, MotorType } from '../types';
+import type { Brand, Company, MotorType } from '../types';
 
 const normalizeText = (text: string) =>
     text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+const extractApiErrorMessage = (error: unknown, fallback: string): string => {
+    if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: { message?: string } } }).response;
+        if (response?.data?.message) {
+            return response.data.message;
+        }
+    }
+    return fallback;
+};
 
 export default function ProcessForm() {
     const navigate = useNavigate();
@@ -16,11 +26,23 @@ export default function ProcessForm() {
     const isEditing = Boolean(editServiceRequest);
 
     const [catalogCompanies, setCatalogCompanies] = useState<Company[]>([]);
+    const [catalogBrands, setCatalogBrands] = useState<Brand[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const companyDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [showBrandDropdown, setShowBrandDropdown] = useState(false);
+    const [brandHighlightedIndex, setBrandHighlightedIndex] = useState(-1);
+    const brandDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [isQuickBrandOpen, setIsQuickBrandOpen] = useState(false);
+    const [quickBrandName, setQuickBrandName] = useState('');
+    const [quickBrandError, setQuickBrandError] = useState<string | null>(null);
+    const [quickBrandSuccess, setQuickBrandSuccess] = useState<string | null>(null);
+    const [isCreatingBrand, setIsCreatingBrand] = useState(false);
+    const quickBrandInputRef = useRef<HTMLInputElement>(null);
 
     const [header, setHeader] = useState({
         serviceRequest: '',
@@ -38,27 +60,48 @@ export default function ProcessForm() {
     const [originalHeader, setOriginalHeader] = useState<typeof header | null>(null);
 
     useEffect(() => {
-        const fetchCompanies = async () => {
+        const fetchCatalogs = async () => {
             try {
-                const comps = await catalogService.getCompanies();
+                const [comps, brands] = await Promise.all([
+                    catalogService.getCompanies(),
+                    catalogService.getBrands(),
+                ]);
                 setCatalogCompanies(comps);
+                setCatalogBrands(brands);
             } catch (error) {
-                console.error('Error cargando empresas:', error);
+                console.error('Error cargando catálogos:', error);
             }
         };
-        fetchCompanies();
+        fetchCatalogs();
     }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            if (companyDropdownRef.current && !companyDropdownRef.current.contains(target)) {
                 setShowCompanyDropdown(false);
                 setHighlightedIndex(-1);
+            }
+            if (brandDropdownRef.current && !brandDropdownRef.current.contains(target)) {
+                setShowBrandDropdown(false);
+                setBrandHighlightedIndex(-1);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isQuickBrandOpen) {
+            quickBrandInputRef.current?.focus();
+        }
+    }, [isQuickBrandOpen]);
+
+    useEffect(() => {
+        if (!quickBrandSuccess) return;
+        const timer = setTimeout(() => setQuickBrandSuccess(null), 4000);
+        return () => clearTimeout(timer);
+    }, [quickBrandSuccess]);
 
     useEffect(() => {
         if (!editServiceRequest) return;
@@ -83,8 +126,8 @@ export default function ProcessForm() {
 
                 setHeader(loaded);
                 setOriginalHeader(loaded);
-            } catch (err: any) {
-                alert(err.response?.data?.message || 'Error al cargar el proceso para edición.');
+            } catch (err: unknown) {
+                alert(extractApiErrorMessage(err, 'Error al cargar el proceso para edición.'));
                 navigate('/apus');
             }
         };
@@ -95,6 +138,23 @@ export default function ProcessForm() {
     const filteredCompanies = normalizedNameQuery
         ? catalogCompanies.filter((c) => normalizeText(c.name).startsWith(normalizedNameQuery))
         : [];
+
+    const normalizedBrandQuery = normalizeText(header.brand);
+    const filteredBrands = normalizedBrandQuery
+        ? catalogBrands
+            .filter((b) => normalizeText(b.name).includes(normalizedBrandQuery))
+            .sort((a, b) => {
+                const aStarts = normalizeText(a.name).startsWith(normalizedBrandQuery) ? 0 : 1;
+                const bStarts = normalizeText(b.name).startsWith(normalizedBrandQuery) ? 0 : 1;
+                if (aStarts !== bStarts) return aStarts - bStarts;
+                return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+            })
+        : catalogBrands;
+
+    const hasExactBrandMatch =
+        normalizedBrandQuery.length > 0 &&
+        catalogBrands.some((b) => normalizeText(b.name) === normalizedBrandQuery);
+    const isNewBrandTyped = normalizedBrandQuery.length > 0 && !hasExactBrandMatch;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -196,6 +256,107 @@ export default function ProcessForm() {
         }
     };
 
+    const selectBrand = (brand: Brand) => {
+        setHeader(prev => ({ ...prev, brand: brand.name }));
+        setShowBrandDropdown(false);
+        setBrandHighlightedIndex(-1);
+        focusElement('input-serial');
+    };
+
+    const handleBrandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setHeader(prev => ({ ...prev, brand: e.target.value }));
+        setShowBrandDropdown(true);
+        setBrandHighlightedIndex(-1);
+    };
+
+    const handleBrandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!showBrandDropdown) {
+                setShowBrandDropdown(true);
+            }
+            if (filteredBrands.length > 0) {
+                setBrandHighlightedIndex(prev => (prev + 1) % filteredBrands.length);
+            }
+            return;
+        }
+        if (e.key === 'ArrowUp' && showBrandDropdown && filteredBrands.length > 0) {
+            e.preventDefault();
+            setBrandHighlightedIndex(prev => (prev <= 0 ? filteredBrands.length - 1 : prev - 1));
+            return;
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (
+                showBrandDropdown &&
+                brandHighlightedIndex >= 0 &&
+                brandHighlightedIndex < filteredBrands.length
+            ) {
+                selectBrand(filteredBrands[brandHighlightedIndex]);
+            } else {
+                setShowBrandDropdown(false);
+                setBrandHighlightedIndex(-1);
+                focusElement('input-serial');
+            }
+            return;
+        }
+        if (e.key === 'Escape') {
+            setShowBrandDropdown(false);
+            setBrandHighlightedIndex(-1);
+        }
+    };
+
+    const handleOpenQuickBrand = () => {
+        setIsQuickBrandOpen(true);
+        setQuickBrandError(null);
+        setQuickBrandSuccess(null);
+    };
+
+    const handleCancelQuickBrand = () => {
+        setIsQuickBrandOpen(false);
+        setQuickBrandName('');
+        setQuickBrandError(null);
+    };
+
+    const handleQuickCreateBrand = async () => {
+        const trimmed = quickBrandName.trim();
+        if (!trimmed) {
+            setQuickBrandError('Ingresa el nombre de la marca.');
+            quickBrandInputRef.current?.focus();
+            return;
+        }
+
+        const existing = catalogBrands.find(
+            (b) => normalizeText(b.name) === normalizeText(trimmed)
+        );
+        if (existing) {
+            setQuickBrandError(`Ya existe una marca registrada con el nombre "${existing.name}".`);
+            quickBrandInputRef.current?.focus();
+            return;
+        }
+
+        try {
+            setIsCreatingBrand(true);
+            setQuickBrandError(null);
+            const created = await catalogService.createBrand({ name: trimmed });
+            setCatalogBrands((prev) =>
+                [...prev, created].sort((a, b) =>
+                    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+                )
+            );
+            setQuickBrandName('');
+            setIsQuickBrandOpen(false);
+            setQuickBrandSuccess(`Marca "${created.name}" creada correctamente.`);
+        } catch (err: unknown) {
+            setQuickBrandError(
+                extractApiErrorMessage(err, 'No se pudo crear la marca. Verifica que no exista.')
+            );
+            quickBrandInputRef.current?.focus();
+        } finally {
+            setIsCreatingBrand(false);
+        }
+    };
+
     const getHeaderHighlight = (field: keyof typeof header) => {
         if (!isEditing || !originalHeader) return '';
         return String(header[field]) !== String(originalHeader[field])
@@ -227,7 +388,7 @@ export default function ProcessForm() {
                 power: header.power,
                 tipoM: header.tipoM,
                 serial: header.serial,
-                brand: header.brand,
+                brand: header.brand.trim(),
                 location: header.location,
             };
 
@@ -240,8 +401,11 @@ export default function ProcessForm() {
                 alert(`Proceso ${created.serviceRequest} creado. Ahora puedes agregar sus servicios.`);
                 navigate(`/apus/detalle?serviceRequest=${encodeURIComponent(created.serviceRequest)}`);
             }
-        } catch (error: any) {
-            alert(`Error al ${isEditing ? 'actualizar' : 'crear'} proceso: ` + (error.response?.data?.message || 'Revisa los campos'));
+        } catch (error: unknown) {
+            alert(
+                `Error al ${isEditing ? 'actualizar' : 'crear'} proceso: ` +
+                extractApiErrorMessage(error, 'Revisa los campos')
+            );
         } finally {
             setIsSaving(false);
         }
@@ -249,10 +413,88 @@ export default function ProcessForm() {
 
     return (
         <div className="p-6 bg-base-100 rounded-box shadow max-w-4xl mx-auto border border-base-200">
-            <h1 className="text-2xl font-bold mb-2">{isEditing ? 'Editar Proceso (Obra)' : 'Crear Nuevo Proceso (Obra)'}</h1>
-            <p className="text-sm text-base-content/70 mb-6">
-                Define la información general de la obra y especificaciones del equipo. Los servicios (APUs) se agregan dentro de la obra.
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold mb-1">
+                        {isEditing ? 'Editar Proceso (Obra)' : 'Crear Nuevo Proceso (Obra)'}
+                    </h1>
+                    <p className="text-sm text-base-content/70">
+                        Define la información general de la obra y especificaciones del equipo. Los servicios (APUs) se agregan dentro de la obra.
+                    </p>
+                </div>
+
+                {/* BOTÓN ESQUINA: CREACIÓN RÁPIDA DE MARCA */}
+                <div className="flex flex-col items-start sm:items-end shrink-0">
+                    <div className="flex items-center gap-2">
+                        {isQuickBrandOpen && (
+                            <input
+                                ref={quickBrandInputRef}
+                                type="text"
+                                value={quickBrandName}
+                                onChange={(e) => {
+                                    setQuickBrandName(e.target.value);
+                                    if (quickBrandError) setQuickBrandError(null);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        void handleQuickCreateBrand();
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        handleCancelQuickBrand();
+                                    }
+                                }}
+                                placeholder="Nombre de la marca..."
+                                maxLength={100}
+                                disabled={isCreatingBrand}
+                                className={`input input-bordered input-sm w-44 sm:w-52 ${
+                                    quickBrandError ? 'input-error' : ''
+                                }`}
+                            />
+                        )}
+                        <button
+                            type="button"
+                            onClick={
+                                isQuickBrandOpen ? () => void handleQuickCreateBrand() : handleOpenQuickBrand
+                            }
+                            disabled={isCreatingBrand}
+                            className={`btn btn-sm ${
+                                isQuickBrandOpen ? 'btn-primary' : 'btn-outline btn-primary'
+                            }`}
+                        >
+                            {isCreatingBrand ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                            ) : isQuickBrandOpen ? (
+                                'Ingresar Marca'
+                            ) : (
+                                '+ Nueva Marca'
+                            )}
+                        </button>
+                        {isQuickBrandOpen && (
+                            <button
+                                type="button"
+                                onClick={handleCancelQuickBrand}
+                                disabled={isCreatingBrand}
+                                className="btn btn-ghost btn-sm btn-square"
+                                title="Cancelar"
+                                aria-label="Cancelar creación de marca"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                    {quickBrandError && (
+                        <p className="text-error text-xs mt-1 max-w-xs sm:text-right">
+                            {quickBrandError}
+                        </p>
+                    )}
+                    {quickBrandSuccess && (
+                        <p className="text-success text-xs mt-1 max-w-xs sm:text-right">
+                            {quickBrandSuccess}
+                        </p>
+                    )}
+                </div>
+            </div>
 
             <form onSubmit={handleSubmit}>
                 {/* CABECERA */}
@@ -397,17 +639,66 @@ export default function ProcessForm() {
                             ))}
                         </select>
                     </div>
-                    <div className="form-control">
-                        <label className="label"><span className="label-text">Marca</span></label>
+                    <div className="form-control relative" ref={brandDropdownRef}>
+                        <label className="label">
+                            <span className="label-text">
+                                Marca
+                                {isNewBrandTyped && (
+                                    <span className="text-info text-xs font-semibold ml-1.5">(Nueva)</span>
+                                )}
+                            </span>
+                        </label>
                         <input
                             id="input-brand"
                             type="text"
                             name="brand"
                             value={header.brand}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => handleEnterFocus(e, 'input-location')}
-                            className={`input input-bordered input-sm ${getHeaderHighlight('brand')}`}
+                            onChange={handleBrandChange}
+                            onFocus={() => setShowBrandDropdown(true)}
+                            onKeyDown={handleBrandKeyDown}
+                            placeholder="Buscar o escribir marca..."
+                            autoComplete="off"
+                            maxLength={100}
+                            className={`input input-bordered input-sm w-full ${getHeaderHighlight('brand')}`}
                         />
+
+                        {showBrandDropdown && (
+                            <ul className="menu bg-base-100 rounded-box shadow-xl border border-base-300 absolute left-0 right-0 top-full mt-1 z-50 max-h-52 overflow-y-auto p-1">
+                                {filteredBrands.length > 0 ? (
+                                    filteredBrands.map((brand, idx) => (
+                                        <li key={brand.id}>
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    selectBrand(brand);
+                                                }}
+                                                className={`text-left w-full text-sm ${
+                                                    idx === brandHighlightedIndex ? 'active' : ''
+                                                }`}
+                                            >
+                                                {brand.name}
+                                            </button>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="disabled">
+                                        <span className="text-xs text-base-content/60 py-2">
+                                            {normalizedBrandQuery
+                                                ? `Sin coincidencias para "${header.brand.trim()}"`
+                                                : 'No hay marcas registradas aún.'}
+                                        </span>
+                                    </li>
+                                )}
+                                {isNewBrandTyped && (
+                                    <li className="disabled border-t border-base-200 mt-1 pt-1">
+                                        <span className="text-xs text-info py-1">
+                                            Se creará &ldquo;{header.brand.trim()}&rdquo; al guardar la obra
+                                        </span>
+                                    </li>
+                                )}
+                            </ul>
+                        )}
                     </div>
                     <div className="form-control">
                         <label className="label"><span className="label-text">Serial</span></label>
@@ -417,7 +708,7 @@ export default function ProcessForm() {
                             name="serial"
                             value={header.serial}
                             onChange={handleInputChange}
-                            onKeyDown={(e) => handleEnterFocus(e, 'input-brand')}
+                            onKeyDown={(e) => handleEnterFocus(e, 'input-location')}
                             className={`input input-bordered input-sm ${getHeaderHighlight('serial')}`}
                         />
                     </div>

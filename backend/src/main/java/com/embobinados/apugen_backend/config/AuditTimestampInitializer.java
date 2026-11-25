@@ -21,7 +21,8 @@ public class AuditTimestampInitializer implements ApplicationRunner {
             "materials",
             "equipments",
             "labors",
-            "catalog_codifications"
+            "catalog_codifications",
+            "brands"
     );
 
     private final JdbcTemplate jdbcTemplate;

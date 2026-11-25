@@ -8,6 +8,17 @@ export interface Company {
     updatedAt?: string;
 }
 
+export interface Brand {
+    id: string;
+    name: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface BrandRequest {
+    name: string;
+}
+
 export interface Material {
     id: string;
     description: string;
