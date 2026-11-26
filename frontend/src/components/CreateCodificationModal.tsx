@@ -102,7 +102,7 @@ export default function CreateCodificationModal({
 
     return (
         <div className="modal modal-open z-[70]" role="dialog" aria-modal="true">
-            <div className="modal-box max-w-md">
+            <div className="modal-box w-11/12 max-w-md max-h-[90vh] overflow-y-auto">
                 <h3 className="font-bold text-lg mb-1">Nueva Codificación</h3>
                 <p className="text-xs text-base-content/70 mb-4">
                     Registra un código de 3 caracteres para reutilizarlo en los IDs del catálogo.
@@ -174,10 +174,10 @@ export default function CreateCodificationModal({
                         )}
                     </div>
 
-                    <div className="modal-action mt-2">
+                    <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
                         <button
                             type="button"
-                            className="btn"
+                            className="btn whitespace-nowrap w-36"
                             onClick={onClose}
                             disabled={submitting}
                         >
@@ -185,7 +185,7 @@ export default function CreateCodificationModal({
                         </button>
                         <button
                             type="submit"
-                            className="btn btn-primary"
+                            className="btn btn-primary whitespace-nowrap w-36"
                             disabled={submitting}
                         >
                             {submitting ? (

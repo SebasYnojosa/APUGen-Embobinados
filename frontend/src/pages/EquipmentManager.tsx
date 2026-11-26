@@ -261,15 +261,15 @@ export default function EquipmentManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Gestión de Equipos</h1>
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold">Gestión de Equipos</h1>
                     <p className="text-sm text-base-content/70">
                         Administra los equipos, precios base y factores de depreciación para los APUs.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>
+                <button className="btn btn-primary btn-sm self-center sm:self-auto whitespace-nowrap w-48" onClick={openCreateModal}>
                     + Nuevo Equipo
                 </button>
             </div>
@@ -285,8 +285,71 @@ export default function EquipmentManager() {
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+            {/* VISTA EN TARJETAS (< lg) */}
+            <div className="lg:hidden space-y-3">
+                {loading ? (
+                    <div className="text-center py-8 text-base-content/70">Cargando equipos...</div>
+                ) : equipments.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/70">No hay equipos registrados.</div>
+                ) : (
+                    equipments.map((equ) => (
+                        <article
+                            key={equ.id}
+                            className="p-4 rounded-box bg-base-200/40 border border-base-300 space-y-2.5"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <span className="font-mono text-xs font-bold badge badge-ghost h-auto py-1 break-all">
+                                    {equ.id}
+                                </span>
+                                <div className="text-right shrink-0">
+                                    <span className="block font-bold text-primary font-mono text-base whitespace-nowrap">
+                                        ${equ.baseValue.toFixed(2)}
+                                    </span>
+                                    <span className="block text-[11px] text-base-content/60 font-mono whitespace-nowrap">
+                                        Deprec.: {equ.depreciationFactor.toFixed(6)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p className="font-medium text-sm leading-snug break-words">
+                                {equ.description}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                <span className="text-base-content/60 font-semibold">Motor:</span>
+                                {renderMotorTypeBadges(equ.paraTipoM)}
+                            </div>
+
+                            <div className="pt-2 border-t border-base-300/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="text-xs text-base-content/70 tabular-nums flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <span><span className="font-semibold">Creado:</span> {formatDateTime(equ.createdAt)}</span>
+                                    <span><span className="font-semibold">Act.:</span> {formatDateTime(equ.updatedAt)}</span>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
+                                        onClick={() => openEditModal(equ)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
+                                        onClick={() => handleDelete(equ.id)}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    ))
+                )}
+            </div>
+
+            {/* VISTA EN TABLA (lg+) */}
+            <div className="hidden lg:block overflow-x-auto">
+                <table className="table table-zebra table-sm w-full [&_th]:px-2.5 [&_td]:px-2.5">
                     <thead>
                         <tr>
                             <th className="whitespace-nowrap">ID</th>
@@ -315,13 +378,13 @@ export default function EquipmentManager() {
                             equipments.map((equ) => (
                                 <tr key={equ.id}>
                                     <td className="font-semibold whitespace-nowrap">{equ.id}</td>
-                                    <td>{equ.description}</td>
+                                    <td className="break-words">{equ.description}</td>
                                     <td className="whitespace-nowrap">
-                                        <span className="badge badge-ghost">
+                                        <span className="badge badge-ghost font-mono">
                                             {equ.baseValue.toFixed(2)}
                                         </span>
                                     </td>
-                                    <td className="whitespace-nowrap">{equ.depreciationFactor.toFixed(6)}</td>
+                                    <td className="whitespace-nowrap font-mono">{equ.depreciationFactor.toFixed(6)}</td>
                                     <td>{renderMotorTypeBadges(equ.paraTipoM)}</td>
                                     <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
                                         <div><span className="font-semibold">Creado:</span> {formatDateTime(equ.createdAt)}</div>
@@ -330,13 +393,15 @@ export default function EquipmentManager() {
                                     <td className="whitespace-nowrap">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <button
-                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
                                                 onClick={() => openEditModal(equ)}
                                             >
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
                                                 onClick={() => handleDelete(equ.id)}
                                             >
                                                 Eliminar
@@ -353,17 +418,17 @@ export default function EquipmentManager() {
             {/* MODAL CREAR / EDITAR EQUIPO */}
             {isModalOpen && (
                 <div className="modal modal-open z-40" role="dialog" aria-modal="true">
-                    <div className="modal-box max-w-lg">
-                        <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+                    <div className="modal-box w-11/12 max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                             <h3 className="font-bold text-lg">
                                 {isEditing ? 'Editar Equipo' : 'Registrar Nuevo Equipo'}
                             </h3>
                             {!isEditing && (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
                                     <button
                                         type="button"
                                         data-skip-codif-blur="true"
-                                        className="btn btn-xs btn-warning"
+                                        className="btn btn-xs btn-warning whitespace-nowrap w-32"
                                         onClick={() => setIsPickerOpen(true)}
                                     >
                                         Usar codificación
@@ -371,7 +436,7 @@ export default function EquipmentManager() {
                                     <button
                                         type="button"
                                         data-skip-codif-blur="true"
-                                        className="btn btn-xs btn-outline btn-primary"
+                                        className="btn btn-xs btn-outline btn-primary whitespace-nowrap w-32"
                                         onClick={() =>
                                             setCreateCodifState({
                                                 isOpen: true,
@@ -411,7 +476,7 @@ export default function EquipmentManager() {
                                     value={currentEquipment.id}
                                     onChange={handleInputChange}
                                     onBlur={handleIdBlur}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: EQU-001"
                                     required
                                     disabled={isEditing}
@@ -427,40 +492,42 @@ export default function EquipmentManager() {
                                     name="description"
                                     value={currentEquipment.description}
                                     onChange={handleInputChange}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: Barnizadora"
                                     required
                                 />
                             </div>
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Precio Base*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="baseValue"
-                                    value={currentEquipment.baseValue}
-                                    onChange={handleInputChange}
-                                    className="input input-bordered"
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">F. Depreciación*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="depreciationFactor"
-                                    value={currentEquipment.depreciationFactor}
-                                    onChange={handleInputChange}
-                                    className="input input-bordered"
-                                    placeholder="0.000000"
-                                    required
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text">Precio Base*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        name="baseValue"
+                                        value={currentEquipment.baseValue}
+                                        onChange={handleInputChange}
+                                        className="input input-bordered w-full"
+                                        placeholder="0.00"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text">F. Depreciación*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        name="depreciationFactor"
+                                        value={currentEquipment.depreciationFactor}
+                                        onChange={handleInputChange}
+                                        className="input input-bordered w-full"
+                                        placeholder="0.000000"
+                                        required
+                                    />
+                                </div>
                             </div>
                             <MotorTypeSelector
                                 value={currentEquipment.paraTipoM}
@@ -468,14 +535,14 @@ export default function EquipmentManager() {
                                     setCurrentEquipment((prev) => ({ ...prev, paraTipoM: next }))
                                 }
                             />
-                            <div className="modal-action">
-                                <button type="submit" className="btn btn-primary">
+                            <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
+                                <button type="submit" className="btn btn-primary w-36">
                                     {isEditing ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button
                                     type="button"
                                     data-skip-codif-blur="true"
-                                    className="btn"
+                                    className="btn w-36"
                                     onClick={closeModal}
                                 >
                                     Cerrar

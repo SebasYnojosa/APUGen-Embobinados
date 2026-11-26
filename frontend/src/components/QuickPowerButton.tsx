@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { catalogService } from '../services/catalogServices';
 import type { Power } from '../types';
 
@@ -20,6 +20,7 @@ interface QuickPowerButtonProps {
     onPowerCreated?: (power: Power) => void;
     isOpen?: boolean;
     onOpenChange?: (open: boolean) => void;
+    buttonClassName?: string;
 }
 
 export default function QuickPowerButton({
@@ -27,29 +28,105 @@ export default function QuickPowerButton({
     onPowerCreated,
     isOpen: controlledOpen,
     onOpenChange,
+    buttonClassName = '',
 }: QuickPowerButtonProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const [powerName, setPowerName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const isControlled = controlledOpen !== undefined;
     const isOpen = isControlled ? controlledOpen : internalOpen;
 
-    const setOpen = (next: boolean) => {
-        if (!isControlled) {
-            setInternalOpen(next);
-        }
-        onOpenChange?.(next);
-    };
+    const onOpenChangeRef = useRef(onOpenChange);
+    const isOpenRef = useRef(isOpen);
+    const isCreatingRef = useRef(isCreating);
+    const pointerDownRef = useRef(false);
+    const pendingBlurCloseRef = useRef(false);
+    const closeTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (isOpen) {
-            inputRef.current?.focus();
-        }
+        onOpenChangeRef.current = onOpenChange;
+    }, [onOpenChange]);
+
+    useEffect(() => {
+        isOpenRef.current = isOpen;
     }, [isOpen]);
+
+    useEffect(() => {
+        isCreatingRef.current = isCreating;
+    }, [isCreating]);
+
+    const setOpen = useCallback(
+        (next: boolean) => {
+            if (!isControlled) {
+                setInternalOpen(next);
+            }
+            onOpenChangeRef.current?.(next);
+        },
+        [isControlled]
+    );
+
+    const handleCancel = useCallback(() => {
+        if (closeTimerRef.current !== null) {
+            window.clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+        pendingBlurCloseRef.current = false;
+        setPowerName('');
+        setError(null);
+        setOpen(false);
+    }, [setOpen]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            pointerDownRef.current = false;
+            pendingBlurCloseRef.current = false;
+            if (closeTimerRef.current !== null) {
+                window.clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+            }
+            return;
+        }
+
+        inputRef.current?.focus();
+
+        const handlePointerDown = () => {
+            pointerDownRef.current = true;
+        };
+
+        const handlePointerUp = () => {
+            pointerDownRef.current = false;
+            if (!pendingBlurCloseRef.current) return;
+            pendingBlurCloseRef.current = false;
+            if (closeTimerRef.current !== null) {
+                window.clearTimeout(closeTimerRef.current);
+            }
+            closeTimerRef.current = window.setTimeout(() => {
+                closeTimerRef.current = null;
+                if (!isOpenRef.current || isCreatingRef.current) return;
+                if (containerRef.current?.contains(document.activeElement)) return;
+                handleCancel();
+            }, 0);
+        };
+
+        window.addEventListener('pointerdown', handlePointerDown, true);
+        window.addEventListener('pointerup', handlePointerUp, true);
+        window.addEventListener('pointercancel', handlePointerUp, true);
+
+        return () => {
+            window.removeEventListener('pointerdown', handlePointerDown, true);
+            window.removeEventListener('pointerup', handlePointerUp, true);
+            window.removeEventListener('pointercancel', handlePointerUp, true);
+            if (closeTimerRef.current !== null) {
+                window.clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+            }
+        };
+    }, [isOpen, handleCancel]);
 
     useEffect(() => {
         if (!success) return;
@@ -64,10 +141,17 @@ export default function QuickPowerButton({
         setOpen(true);
     };
 
-    const handleCancel = () => {
-        setPowerName('');
-        setError(null);
-        setOpen(false);
+    const handleContainerBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+        if (!isOpen || isCreating) return;
+        const nextFocused = e.relatedTarget as Node | null;
+        if (nextFocused && containerRef.current?.contains(nextFocused)) {
+            return;
+        }
+        if (pointerDownRef.current) {
+            pendingBlurCloseRef.current = true;
+            return;
+        }
+        handleCancel();
     };
 
     const handleCreate = async () => {
@@ -108,8 +192,12 @@ export default function QuickPowerButton({
     };
 
     return (
-        <div className="flex flex-col items-start sm:items-end shrink-0">
-            <div className="flex items-center gap-2">
+        <div
+            ref={containerRef}
+            onBlur={handleContainerBlur}
+            className="relative flex flex-col items-center lg:items-end min-w-0 max-w-full min-h-[4.5rem] lg:min-h-0"
+        >
+            <div className="flex flex-col-reverse items-center gap-2 lg:flex-row lg:items-center lg:justify-end">
                 {isOpen && (
                     <input
                         ref={inputRef}
@@ -130,19 +218,24 @@ export default function QuickPowerButton({
                         }}
                         placeholder="Ej: 50 HP, 37 kW..."
                         maxLength={50}
-                        disabled={isCreating}
-                        className={`input input-bordered input-sm w-44 sm:w-52 ${
+                        readOnly={isCreating}
+                        className={`input input-bordered input-sm w-48 ${
                             error ? 'input-error' : ''
                         }`}
                     />
                 )}
                 <button
                     type="button"
+                    onMouseDown={(e) => {
+                        if (isOpen) {
+                            e.preventDefault();
+                        }
+                    }}
                     onClick={isOpen ? () => void handleCreate() : handleOpen}
                     disabled={isCreating}
                     className={`btn btn-sm whitespace-nowrap ${
                         isOpen ? 'btn-secondary' : 'btn-outline btn-secondary'
-                    }`}
+                    } ${buttonClassName}`.trim()}
                 >
                     {isCreating ? (
                         <span className="loading loading-spinner loading-xs"></span>
@@ -152,26 +245,14 @@ export default function QuickPowerButton({
                         '+ Nueva Potencia'
                     )}
                 </button>
-                {isOpen && (
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={isCreating}
-                        className="btn btn-ghost btn-sm btn-square"
-                        title="Cancelar"
-                        aria-label="Cancelar creación de potencia"
-                    >
-                        ✕
-                    </button>
-                )}
             </div>
             {isOpen && error && (
-                <p className="text-error text-xs mt-1 max-w-xs sm:text-right">
+                <p className="text-error text-xs mt-1 max-w-48 lg:max-w-xs text-center lg:text-right break-words max-lg:absolute max-lg:top-full max-lg:left-1/2 max-lg:-translate-x-1/2 max-lg:z-20 max-lg:w-48 max-lg:bg-base-100 max-lg:px-2 max-lg:py-1 max-lg:rounded-md max-lg:shadow-md max-lg:border max-lg:border-error/30">
                     {error}
                 </p>
             )}
             {success && (
-                <p className="text-success text-xs mt-1 max-w-xs sm:text-right">
+                <p className="text-success text-xs mt-1 max-w-48 lg:max-w-xs text-center lg:text-right break-words max-lg:absolute max-lg:top-full max-lg:left-1/2 max-lg:-translate-x-1/2 max-lg:z-20 max-lg:w-48 max-lg:bg-base-100 max-lg:px-2 max-lg:py-1 max-lg:rounded-md max-lg:shadow-md max-lg:border max-lg:border-success/30">
                     {success}
                 </p>
             )}

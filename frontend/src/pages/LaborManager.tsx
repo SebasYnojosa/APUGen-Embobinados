@@ -245,15 +245,15 @@ export default function LaborManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Gestión de Cargos</h1>
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold">Gestión de Cargos</h1>
                     <p className="text-sm text-base-content/70">
                         Administra a los trabajadores y sus salarios diarios.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>
+                <button className="btn btn-primary btn-sm self-center sm:self-auto whitespace-nowrap w-48" onClick={openCreateModal}>
                     + Nuevo Cargo
                 </button>
             </div>
@@ -269,8 +269,66 @@ export default function LaborManager() {
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+            {/* VISTA EN TARJETAS (< lg) */}
+            <div className="lg:hidden space-y-3">
+                {loading ? (
+                    <div className="text-center py-8 text-base-content/70">Cargando cargos...</div>
+                ) : labors.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/70">No hay cargos registrados.</div>
+                ) : (
+                    labors.map((lab) => (
+                        <article
+                            key={lab.id}
+                            className="p-4 rounded-box bg-base-200/40 border border-base-300 space-y-2.5"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <span className="font-mono text-xs font-bold badge badge-ghost h-auto py-1 break-all">
+                                    {lab.id}
+                                </span>
+                                <span className="font-bold text-primary font-mono text-base whitespace-nowrap shrink-0">
+                                    ${lab.baseDailyWage.toFixed(2)}<span className="text-xs font-normal text-base-content/60">/día</span>
+                                </span>
+                            </div>
+
+                            <p className="font-medium text-sm leading-snug break-words">
+                                {lab.description}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                <span className="text-base-content/60 font-semibold">Motor:</span>
+                                {renderMotorTypeBadges(lab.paraTipoM)}
+                            </div>
+
+                            <div className="pt-2 border-t border-base-300/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="text-xs text-base-content/70 tabular-nums flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <span><span className="font-semibold">Creado:</span> {formatDateTime(lab.createdAt)}</span>
+                                    <span><span className="font-semibold">Act.:</span> {formatDateTime(lab.updatedAt)}</span>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
+                                        onClick={() => openEditModal(lab)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
+                                        onClick={() => handleDelete(lab.id)}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    ))
+                )}
+            </div>
+
+            {/* VISTA EN TABLA (lg+) */}
+            <div className="hidden lg:block overflow-x-auto">
+                <table className="table table-zebra table-sm w-full [&_th]:px-2.5 [&_td]:px-2.5">
                     <thead>
                         <tr>
                             <th className="whitespace-nowrap">ID</th>
@@ -298,8 +356,8 @@ export default function LaborManager() {
                             labors.map((lab) => (
                                 <tr key={lab.id}>
                                     <td className="font-semibold whitespace-nowrap">{lab.id}</td>
-                                    <td>{lab.description}</td>
-                                    <td className="whitespace-nowrap">${lab.baseDailyWage.toFixed(2)}</td>
+                                    <td className="break-words">{lab.description}</td>
+                                    <td className="whitespace-nowrap font-mono">${lab.baseDailyWage.toFixed(2)}</td>
                                     <td>{renderMotorTypeBadges(lab.paraTipoM)}</td>
                                     <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
                                         <div><span className="font-semibold">Creado:</span> {formatDateTime(lab.createdAt)}</div>
@@ -308,13 +366,15 @@ export default function LaborManager() {
                                     <td className="whitespace-nowrap">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <button
-                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
                                                 onClick={() => openEditModal(lab)}
                                             >
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
                                                 onClick={() => handleDelete(lab.id)}
                                             >
                                                 Eliminar
@@ -331,17 +391,17 @@ export default function LaborManager() {
             {/* MODAL CREAR / EDITAR CARGO */}
             {isModalOpen && (
                 <div className="modal modal-open z-40" role="dialog" aria-modal="true">
-                    <div className="modal-box max-w-lg">
-                        <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+                    <div className="modal-box w-11/12 max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                             <h3 className="font-bold text-lg">
                                 {isEditing ? 'Editar Cargo' : 'Registrar Nuevo Cargo'}
                             </h3>
                             {!isEditing && (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
                                     <button
                                         type="button"
                                         data-skip-codif-blur="true"
-                                        className="btn btn-xs btn-warning"
+                                        className="btn btn-xs btn-warning whitespace-nowrap w-32"
                                         onClick={() => setIsPickerOpen(true)}
                                     >
                                         Usar codificación
@@ -349,7 +409,7 @@ export default function LaborManager() {
                                     <button
                                         type="button"
                                         data-skip-codif-blur="true"
-                                        className="btn btn-xs btn-outline btn-primary"
+                                        className="btn btn-xs btn-outline btn-primary whitespace-nowrap w-32"
                                         onClick={() =>
                                             setCreateCodifState({
                                                 isOpen: true,
@@ -389,7 +449,7 @@ export default function LaborManager() {
                                     value={currentLabor.id}
                                     onChange={handleInputChange}
                                     onBlur={handleIdBlur}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: MDO-001"
                                     required
                                     disabled={isEditing}
@@ -405,7 +465,7 @@ export default function LaborManager() {
                                     name="description"
                                     value={currentLabor.description}
                                     onChange={handleInputChange}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: Ingeniero"
                                     required
                                 />
@@ -420,7 +480,7 @@ export default function LaborManager() {
                                     name="baseDailyWage"
                                     value={currentLabor.baseDailyWage}
                                     onChange={handleInputChange}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="0.00"
                                     required
                                 />
@@ -431,14 +491,14 @@ export default function LaborManager() {
                                     setCurrentLabor((prev) => ({ ...prev, paraTipoM: next }))
                                 }
                             />
-                            <div className="modal-action">
-                                <button type="submit" className="btn btn-primary">
+                            <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
+                                <button type="submit" className="btn btn-primary w-36">
                                     {isEditing ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button
                                     type="button"
                                     data-skip-codif-blur="true"
-                                    className="btn"
+                                    className="btn w-36"
                                     onClick={closeModal}
                                 >
                                     Cerrar

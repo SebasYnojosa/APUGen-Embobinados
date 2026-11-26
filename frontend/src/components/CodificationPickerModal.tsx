@@ -48,10 +48,10 @@ export default function CodificationPickerModal({
 
     return (
         <div className="modal modal-open z-[65]" role="dialog" aria-modal="true">
-            <div className="modal-box max-w-lg">
-                <div className="flex justify-between items-start gap-3 mb-4">
-                    <div>
-                        <h3 className="font-bold text-lg">
+            <div className="modal-box w-11/12 max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2.5 mb-4">
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-lg break-words">
                             Seleccionar Codificación — {CODIFICATION_TYPE_SHORT[type]}
                         </h3>
                         <p className="text-xs text-base-content/70">
@@ -61,7 +61,7 @@ export default function CodificationPickerModal({
                     {onRequestCreate && (
                         <button
                             type="button"
-                            className="btn btn-xs btn-outline btn-primary shrink-0"
+                            className="btn btn-xs btn-outline btn-primary self-center sm:self-auto whitespace-nowrap w-32 shrink-0"
                             onClick={() => {
                                 onClose();
                                 onRequestCreate();
@@ -81,7 +81,7 @@ export default function CodificationPickerModal({
                     autoFocus
                 />
 
-                <div className="max-h-72 overflow-y-auto border border-base-300 rounded-box divide-y divide-base-200">
+                <div className="max-h-64 sm:max-h-72 overflow-y-auto border border-base-300 rounded-box divide-y divide-base-200">
                     {filtered.length === 0 ? (
                         <div className="p-6 text-center text-sm text-base-content/60">
                             No hay codificaciones registradas para{' '}
@@ -97,19 +97,19 @@ export default function CodificationPickerModal({
                                     onSelect(item);
                                     onClose();
                                 }}
-                                className="w-full text-left px-4 py-3 hover:bg-base-200 transition-colors flex items-center gap-3"
+                                className="w-full text-left px-3.5 sm:px-4 py-3 hover:bg-base-200 transition-colors flex items-center gap-3"
                             >
                                 <span className="badge badge-warning font-mono font-bold tracking-wider px-3 py-2.5 shrink-0">
                                     {item.code}
                                 </span>
-                                <span className="text-sm leading-snug">{item.description}</span>
+                                <span className="text-sm leading-snug break-words min-w-0">{item.description}</span>
                             </button>
                         ))
                     )}
                 </div>
 
-                <div className="modal-action mt-4">
-                    <button type="button" className="btn btn-sm" onClick={onClose}>
+                <div className="modal-action flex-wrap justify-center sm:justify-end mt-4">
+                    <button type="button" className="btn btn-sm whitespace-nowrap w-36" onClick={onClose}>
                         Cerrar
                     </button>
                 </div>

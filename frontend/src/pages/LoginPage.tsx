@@ -80,34 +80,35 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-base-200 flex items-center justify-center p-4 relative">
-            <div className="absolute top-4 right-4">
+        <div className="min-h-screen bg-base-200 flex flex-col p-4 sm:p-6">
+            <div className="flex justify-end mb-4">
                 <ThemeToggle showLabel />
             </div>
-            <div className="card w-full max-w-md bg-base-100 shadow-xl border border-base-300">
-                <div className="card-body gap-5">
-                    <div className="text-center space-y-1">
-                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-2">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-6 h-6"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                                />
-                            </svg>
+            <div className="flex-1 flex items-center justify-center">
+                <div className="card w-full max-w-md bg-base-100 shadow-xl border border-base-300">
+                    <div className="card-body p-5 sm:p-8 gap-4 sm:gap-5">
+                        <div className="text-center space-y-1">
+                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-2">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="w-6 h-6"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                    />
+                                </svg>
+                            </div>
+                            <h1 className="text-2xl font-bold tracking-tight">APU Gen</h1>
+                            <p className="text-sm text-base-content/70">
+                                Sistema de Análisis de Precios Unitarios — Embobinados
+                            </p>
                         </div>
-                        <h1 className="text-2xl font-bold tracking-tight">APU Gen</h1>
-                        <p className="text-sm text-base-content/70">
-                            Sistema de Análisis de Precios Unitarios — Embobinados
-                        </p>
-                    </div>
 
                     {redirectedFromDeepLink && !error && (
                         <div className="alert alert-info py-2.5 text-sm">
@@ -225,10 +226,11 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <p className="text-xs text-center text-base-content/50">
-                        Acceso exclusivo para personal autorizado. Si necesitas una cuenta,
-                        solicítala al administrador.
-                    </p>
+                        <p className="text-xs text-center text-base-content/50">
+                            Acceso exclusivo para personal autorizado. Si necesitas una cuenta,
+                            solicítala al administrador.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

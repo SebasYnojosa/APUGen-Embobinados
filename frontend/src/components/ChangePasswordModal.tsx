@@ -84,7 +84,7 @@ export default function ChangePasswordModal({
 
     return (
         <div className="modal modal-open" role="dialog" aria-modal="true">
-            <div className="modal-box max-w-md">
+            <div className="modal-box w-11/12 max-w-md max-h-[90vh] overflow-y-auto">
                 <h3 className="font-bold text-lg mb-2">Cambiar contraseña</h3>
 
                 {forced && (
@@ -157,11 +157,11 @@ export default function ChangePasswordModal({
                         />
                     </div>
 
-                    <div className="modal-action mt-2">
+                    <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
                         {forced ? (
                             <button
                                 type="button"
-                                className="btn btn-ghost"
+                                className="btn btn-ghost whitespace-nowrap w-44"
                                 onClick={logout}
                                 disabled={submitting}
                             >
@@ -170,7 +170,7 @@ export default function ChangePasswordModal({
                         ) : (
                             <button
                                 type="button"
-                                className="btn"
+                                className="btn whitespace-nowrap w-44"
                                 onClick={handleClose}
                                 disabled={submitting}
                             >
@@ -179,7 +179,7 @@ export default function ChangePasswordModal({
                         )}
                         <button
                             type="submit"
-                            className="btn btn-primary"
+                            className="btn btn-primary whitespace-nowrap w-44"
                             disabled={submitting}
                         >
                             {submitting ? (

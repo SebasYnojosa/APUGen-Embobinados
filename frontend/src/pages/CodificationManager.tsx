@@ -173,24 +173,24 @@ export default function CodificationManager() {
             : codifications.filter((c) => c.type === filterType);
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Gestión de Codificaciones</h1>
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold">Gestión de Codificaciones</h1>
                     <p className="text-sm text-base-content/70">
                         Administra los códigos de 3 caracteres para clasificar materiales, equipos y mano de obra.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>
+                <button className="btn btn-primary btn-sm self-center sm:self-auto whitespace-nowrap w-48" onClick={openCreateModal}>
                     + Nueva Codificación
                 </button>
             </div>
 
             {/* FILTRO POR TIPO DE CATÁLOGO */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
                 <button
                     type="button"
-                    className={`btn btn-xs ${filterType === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                    className={`btn btn-xs w-32 whitespace-nowrap ${filterType === 'all' ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => setFilterType('all')}
                 >
                     Todas ({codifications.length})
@@ -199,7 +199,7 @@ export default function CodificationManager() {
                     <button
                         key={t}
                         type="button"
-                        className={`btn btn-xs ${filterType === t ? 'btn-primary' : 'btn-ghost'}`}
+                        className={`btn btn-xs w-32 whitespace-nowrap ${filterType === t ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => setFilterType(t)}
                     >
                         {CODIFICATION_TYPE_SHORT[t]} (
@@ -219,8 +219,61 @@ export default function CodificationManager() {
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+            {/* VISTA EN TARJETAS (< lg) */}
+            <div className="lg:hidden space-y-3">
+                {loading ? (
+                    <div className="text-center py-8 text-base-content/70">Cargando codificaciones...</div>
+                ) : visibleCodifications.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/70">No hay codificaciones registradas.</div>
+                ) : (
+                    visibleCodifications.map((item) => (
+                        <article
+                            key={item.id}
+                            className="p-4 rounded-box bg-base-200/40 border border-base-300 space-y-2.5"
+                        >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="badge badge-warning font-mono font-bold tracking-wider px-3 py-2.5">
+                                    {item.code}
+                                </span>
+                                <span className={`badge badge-sm ${TYPE_BADGE_CLASS[item.type]}`}>
+                                    {CODIFICATION_TYPE_LABELS[item.type]}
+                                </span>
+                            </div>
+
+                            <p className="font-medium text-sm leading-snug break-words">
+                                {item.description}
+                            </p>
+
+                            <div className="pt-2 border-t border-base-300/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="text-xs text-base-content/70 tabular-nums flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <span><span className="font-semibold">Creado:</span> {formatDateTime(item.createdAt)}</span>
+                                    <span><span className="font-semibold">Act.:</span> {formatDateTime(item.updatedAt)}</span>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
+                                        onClick={() => openEditModal(item)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
+                                        onClick={() => handleDelete(item)}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    ))
+                )}
+            </div>
+
+            {/* VISTA EN TABLA (lg+) */}
+            <div className="hidden lg:block overflow-x-auto">
+                <table className="table table-zebra table-sm w-full [&_th]:px-2.5 [&_td]:px-2.5">
                     <thead>
                         <tr>
                             <th className="whitespace-nowrap">Código</th>
@@ -251,7 +304,7 @@ export default function CodificationManager() {
                                             {item.code}
                                         </span>
                                     </td>
-                                    <td>{item.description}</td>
+                                    <td className="break-words">{item.description}</td>
                                     <td className="whitespace-nowrap">
                                         <span className={`badge badge-sm ${TYPE_BADGE_CLASS[item.type]}`}>
                                             {CODIFICATION_TYPE_LABELS[item.type]}
@@ -264,13 +317,15 @@ export default function CodificationManager() {
                                     <td className="whitespace-nowrap">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <button
-                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
                                                 onClick={() => openEditModal(item)}
                                             >
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
                                                 onClick={() => handleDelete(item)}
                                             >
                                                 Eliminar
@@ -287,7 +342,7 @@ export default function CodificationManager() {
             {/* MODAL CREAR / EDITAR CODIFICACIÓN */}
             {isModalOpen && (
                 <div className="modal modal-open z-40" role="dialog" aria-modal="true">
-                    <div className="modal-box max-w-md">
+                    <div className="modal-box w-11/12 max-w-md max-h-[90vh] overflow-y-auto">
                         <h3 className="font-bold text-lg mb-4">
                             {isEditing ? 'Editar Codificación' : 'Registrar Nueva Codificación'}
                         </h3>
@@ -320,7 +375,7 @@ export default function CodificationManager() {
                                             code: e.target.value.toUpperCase().replace(/\s/g, ''),
                                         }))
                                     }
-                                    className="input input-bordered font-mono uppercase tracking-widest"
+                                    className="input input-bordered font-mono uppercase tracking-widest w-full"
                                     placeholder="Ej: DES, BAR"
                                     required
                                     disabled={submitting}
@@ -341,7 +396,7 @@ export default function CodificationManager() {
                                             description: e.target.value,
                                         }))
                                     }
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: Barnices y resinas aislantes"
                                     required
                                     disabled={submitting}
@@ -361,7 +416,7 @@ export default function CodificationManager() {
                                             type: e.target.value as CodificationType,
                                         }))
                                     }
-                                    className="select select-bordered"
+                                    className="select select-bordered w-full"
                                     disabled={submitting}
                                 >
                                     <option value="mat">{CODIFICATION_TYPE_LABELS.mat}</option>
@@ -370,10 +425,10 @@ export default function CodificationManager() {
                                 </select>
                             </div>
 
-                            <div className="modal-action mt-2">
+                            <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
                                 <button
                                     type="submit"
-                                    className="btn btn-primary"
+                                    className="btn btn-primary w-36"
                                     disabled={submitting}
                                 >
                                     {submitting
@@ -384,7 +439,7 @@ export default function CodificationManager() {
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn"
+                                    className="btn w-36"
                                     onClick={closeModal}
                                     disabled={submitting}
                                 >

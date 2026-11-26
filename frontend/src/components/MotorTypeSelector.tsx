@@ -28,7 +28,7 @@ export default function MotorTypeSelector({
 
     return (
         <div className="form-control">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                 <span className="label-text">Para tipo de motor</span>
                 <span
                     className={`badge badge-xs ${
@@ -39,7 +39,7 @@ export default function MotorTypeSelector({
                 </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {MOTOR_TYPE_OPTIONS.map((opt) => {
                     const checked = value.includes(opt.value);
                     return (
@@ -53,7 +53,7 @@ export default function MotorTypeSelector({
                         >
                             <input
                                 type="checkbox"
-                                className="checkbox checkbox-primary checkbox-xs"
+                                className="checkbox checkbox-primary checkbox-xs shrink-0"
                                 checked={checked}
                                 onChange={() => toggleOption(opt.value)}
                                 disabled={disabled}

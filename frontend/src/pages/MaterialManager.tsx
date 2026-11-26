@@ -249,15 +249,15 @@ export default function MaterialManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Gestión de Materiales</h1>
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold">Gestión de Materiales</h1>
                     <p className="text-sm text-base-content/70">
                         Administra los insumos y costos base para los APUs.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>
+                <button className="btn btn-primary btn-sm self-center sm:self-auto whitespace-nowrap w-48" onClick={openCreateModal}>
                     + Nuevo Material
                 </button>
             </div>
@@ -273,8 +273,69 @@ export default function MaterialManager() {
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+            {/* VISTA EN TARJETAS (< lg) */}
+            <div className="lg:hidden space-y-3">
+                {loading ? (
+                    <div className="text-center py-8 text-base-content/70">Cargando materiales...</div>
+                ) : materials.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/70">No hay materiales registrados.</div>
+                ) : (
+                    materials.map((mat) => (
+                        <article
+                            key={mat.id}
+                            className="p-4 rounded-box bg-base-200/40 border border-base-300 space-y-2.5"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                    <span className="font-mono text-xs font-bold badge badge-ghost h-auto py-1 break-all">
+                                        {mat.id}
+                                    </span>
+                                    <span className="badge badge-outline badge-sm">{mat.unit}</span>
+                                </div>
+                                <span className="font-bold text-primary font-mono text-base whitespace-nowrap shrink-0">
+                                    ${mat.baseCost.toFixed(2)}
+                                </span>
+                            </div>
+
+                            <p className="font-medium text-sm leading-snug break-words">
+                                {mat.description}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                <span className="text-base-content/60 font-semibold">Motor:</span>
+                                {renderMotorTypeBadges(mat.paraTipoM)}
+                            </div>
+
+                            <div className="pt-2 border-t border-base-300/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="text-xs text-base-content/70 tabular-nums flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <span><span className="font-semibold">Creado:</span> {formatDateTime(mat.createdAt)}</span>
+                                    <span><span className="font-semibold">Act.:</span> {formatDateTime(mat.updatedAt)}</span>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
+                                        onClick={() => openEditModal(mat)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
+                                        onClick={() => handleDelete(mat.id)}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    ))
+                )}
+            </div>
+
+            {/* VISTA EN TABLA (lg+) */}
+            <div className="hidden lg:block overflow-x-auto">
+                <table className="table table-zebra table-sm w-full [&_th]:px-2.5 [&_td]:px-2.5">
                     <thead>
                         <tr>
                             <th className="whitespace-nowrap">ID</th>
@@ -303,11 +364,11 @@ export default function MaterialManager() {
                             materials.map((mat) => (
                                 <tr key={mat.id}>
                                     <td className="font-semibold whitespace-nowrap">{mat.id}</td>
-                                    <td>{mat.description}</td>
+                                    <td className="break-words">{mat.description}</td>
                                     <td className="whitespace-nowrap">
                                         <span className="badge badge-ghost">{mat.unit}</span>
                                     </td>
-                                    <td className="whitespace-nowrap">${mat.baseCost.toFixed(2)}</td>
+                                    <td className="whitespace-nowrap font-mono">${mat.baseCost.toFixed(2)}</td>
                                     <td>{renderMotorTypeBadges(mat.paraTipoM)}</td>
                                     <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums leading-tight">
                                         <div><span className="font-semibold">Creado:</span> {formatDateTime(mat.createdAt)}</div>
@@ -316,13 +377,15 @@ export default function MaterialManager() {
                                     <td className="whitespace-nowrap">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <button
-                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-info whitespace-nowrap w-20"
                                                 onClick={() => openEditModal(mat)}
                                             >
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap"
+                                                type="button"
+                                                className="btn btn-xs btn-outline btn-error whitespace-nowrap w-20"
                                                 onClick={() => handleDelete(mat.id)}
                                             >
                                                 Eliminar
@@ -339,17 +402,17 @@ export default function MaterialManager() {
             {/* MODAL CREAR / EDITAR MATERIAL */}
             {isModalOpen && (
                 <div className="modal modal-open z-40" role="dialog" aria-modal="true">
-                    <div className="modal-box max-w-lg">
-                        <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+                    <div className="modal-box w-11/12 max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                             <h3 className="font-bold text-lg">
                                 {isEditing ? 'Editar Material' : 'Registrar Nuevo Material'}
                             </h3>
                             {!isEditing && (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
                                     <button
                                         type="button"
                                         data-skip-codif-blur="true"
-                                        className="btn btn-xs btn-warning"
+                                        className="btn btn-xs btn-warning whitespace-nowrap w-32"
                                         onClick={() => setIsPickerOpen(true)}
                                     >
                                         Usar codificación
@@ -357,7 +420,7 @@ export default function MaterialManager() {
                                     <button
                                         type="button"
                                         data-skip-codif-blur="true"
-                                        className="btn btn-xs btn-outline btn-primary"
+                                        className="btn btn-xs btn-outline btn-primary whitespace-nowrap w-32"
                                         onClick={() =>
                                             setCreateCodifState({
                                                 isOpen: true,
@@ -397,7 +460,7 @@ export default function MaterialManager() {
                                     value={currentMaterial.id}
                                     onChange={handleInputChange}
                                     onBlur={handleIdBlur}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: MAT-001"
                                     required
                                     disabled={isEditing}
@@ -413,39 +476,41 @@ export default function MaterialManager() {
                                     name="description"
                                     value={currentMaterial.description}
                                     onChange={handleInputChange}
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     placeholder="Ej: Alambre de Cobre esmaltado"
                                     required
                                 />
                             </div>
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Unidad de Medida*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    name="unit"
-                                    value={currentMaterial.unit}
-                                    onChange={handleInputChange}
-                                    className="input input-bordered"
-                                    placeholder="Ej: kg, m, rollos"
-                                    required
-                                />
-                            </div>
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Costo Base*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="baseCost"
-                                    value={currentMaterial.baseCost}
-                                    onChange={handleInputChange}
-                                    className="input input-bordered"
-                                    placeholder="0.00"
-                                    required
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text">Unidad de Medida*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="unit"
+                                        value={currentMaterial.unit}
+                                        onChange={handleInputChange}
+                                        className="input input-bordered w-full"
+                                        placeholder="Ej: kg, m, rollos"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text">Costo Base*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        name="baseCost"
+                                        value={currentMaterial.baseCost}
+                                        onChange={handleInputChange}
+                                        className="input input-bordered w-full"
+                                        placeholder="0.00"
+                                        required
+                                    />
+                                </div>
                             </div>
                             <MotorTypeSelector
                                 value={currentMaterial.paraTipoM}
@@ -453,14 +518,14 @@ export default function MaterialManager() {
                                     setCurrentMaterial((prev) => ({ ...prev, paraTipoM: next }))
                                 }
                             />
-                            <div className="modal-action">
-                                <button type="submit" className="btn btn-primary">
+                            <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
+                                <button type="submit" className="btn btn-primary w-36">
                                     {isEditing ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button
                                     type="button"
                                     data-skip-codif-blur="true"
-                                    className="btn"
+                                    className="btn w-36"
                                     onClick={closeModal}
                                 >
                                     Cerrar

@@ -916,28 +916,30 @@ export default function ApuForm() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-5xl mx-auto border border-base-200">
-            <div className="flex flex-wrap justify-between items-start gap-4 mb-6 border-b pb-4">
-                <div>
-                    <h1 className="text-2xl font-bold">
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-5xl mx-auto border border-base-200">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 mb-6 border-b border-base-300 pb-4">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold break-words">
                         {isEditing ? `Editar Servicio (${editServiceId})` : 'Agregar Nuevo Servicio (APU)'}
                     </h1>
                     {parentProcess && (
                         <p className="text-sm text-base-content/70 mt-1 flex flex-wrap items-center gap-2">
-                            <span>
+                            <span className="break-words">
                                 Obra: <strong className="text-base-content">{parentProcess.serviceRequest}</strong> — {parentProcess.mainProcess} ({parentProcess.company?.name})
                             </span>
                             {processMotorType && (
-                                <span className="badge badge-info badge-outline badge-sm font-medium">
+                                <span className="badge badge-info badge-outline badge-sm font-medium shrink-0">
                                     Motor: {formatMotorType(processMotorType)}
                                 </span>
                             )}
                         </p>
                     )}
                 </div>
-                <button type="button" onClick={goBack} className="btn btn-outline btn-sm">
-                    Volver a la Obra
-                </button>
+                <div className="flex justify-center lg:justify-end w-full lg:w-auto shrink-0">
+                    <button type="button" onClick={goBack} className="btn btn-outline btn-sm whitespace-nowrap w-48">
+                        Volver a la Obra
+                    </button>
+                </div>
             </div>
 
             {/* NOMBRE / DESCRIPCIÓN DEL SERVICIO */}
@@ -960,35 +962,35 @@ export default function ApuForm() {
             </div>
 
             {/* VARIABLES DE CÁLCULO */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
                 <div className="form-control">
                     <label className="label"><span className="label-text font-bold">Cantidad</span></label>
-                    <input id="input-itemQuantity" type="number" name="itemQuantity" value={serviceData.itemQuantity} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-performance')} className={`input input-bordered ${getFieldHighlight('itemQuantity')}`} step="0.01" />
+                    <input id="input-itemQuantity" type="number" name="itemQuantity" value={serviceData.itemQuantity} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-performance')} className={`input input-bordered w-full ${getFieldHighlight('itemQuantity')}`} step="0.01" />
                 </div>
                 <div className="form-control">
                     <label className="label"><span className="label-text font-bold text-primary">Rendimiento*</span></label>
-                    <input id="input-performance" type="number" name="performance" value={serviceData.performance} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-socialLawsPercentage')} className={`input input-bordered border-primary ${getFieldHighlight('performance')}`} step="0.01" required />
+                    <input id="input-performance" type="number" name="performance" value={serviceData.performance} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-socialLawsPercentage')} className={`input input-bordered border-primary w-full ${getFieldHighlight('performance')}`} step="0.01" required />
                 </div>
                 <div className="form-control">
                     <label className="label"><span className="label-text">% Leyes Soc.</span></label>
-                    <input id="input-socialLawsPercentage" type="number" name="socialLawsPercentage" value={serviceData.socialLawsPercentage} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-adminPercentage')} className={`input input-bordered ${getFieldHighlight('socialLawsPercentage')}`} step="0.01" />
+                    <input id="input-socialLawsPercentage" type="number" name="socialLawsPercentage" value={serviceData.socialLawsPercentage} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-adminPercentage')} className={`input input-bordered w-full ${getFieldHighlight('socialLawsPercentage')}`} step="0.01" />
                 </div>
                 <div className="form-control">
                     <label className="label"><span className="label-text">% Admin.</span></label>
-                    <input id="input-adminPercentage" type="number" name="adminPercentage" value={serviceData.adminPercentage} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-utilityContingencyPercentage')} className={`input input-bordered ${getFieldHighlight('adminPercentage')}`} step="0.01" />
+                    <input id="input-adminPercentage" type="number" name="adminPercentage" value={serviceData.adminPercentage} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, 'input-utilityContingencyPercentage')} className={`input input-bordered w-full ${getFieldHighlight('adminPercentage')}`} step="0.01" />
                 </div>
-                <div className="form-control">
+                <div className="form-control col-span-2 sm:col-span-1">
                     <label className="label"><span className="label-text">% Utilidad</span></label>
-                    <input id="input-utilityContingencyPercentage" type="number" name="utilityContingencyPercentage" value={serviceData.utilityContingencyPercentage} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, materials.length > 0 ? 'input-material-id-0' : 'btn-add-material')} className={`input input-bordered ${getFieldHighlight('utilityContingencyPercentage')}`} step="0.01" />
+                    <input id="input-utilityContingencyPercentage" type="number" name="utilityContingencyPercentage" value={serviceData.utilityContingencyPercentage} onChange={handleInputChange} onKeyDown={(e) => handleEnterFocus(e, materials.length > 0 ? 'input-material-id-0' : 'btn-add-material')} className={`input input-bordered w-full ${getFieldHighlight('utilityContingencyPercentage')}`} step="0.01" />
                 </div>
             </div>
 
             {/* LISTAS DE DETALLES */}
-            <div ref={listsContainerRef} className="flex flex-col gap-6 mb-8 overflow-x-auto lg:overflow-visible">
+            <div ref={listsContainerRef} className="flex flex-col gap-6 mb-8">
 
                 {/* MATERIALES */}
-                <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
-                    <div className="flex justify-between items-center gap-3 mb-4">
+                <div className="bg-base-200/50 border border-base-300 p-3.5 sm:p-6 rounded-xl">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2 mb-4">
                         <h3 className="text-lg text-base-content font-medium flex items-center gap-2"><span>🔧</span> Materiales</h3>
                         <button
                             type="button"
@@ -996,7 +998,7 @@ export default function ApuForm() {
                             disabled={selectedIdInput?.type !== 'mat'}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => openCodificationPicker('mat')}
-                            className={`btn btn-sm ${selectedIdInput?.type === 'mat' ? 'btn-warning' : 'btn-disabled'}`}
+                            className={`btn btn-sm whitespace-nowrap w-48 ${selectedIdInput?.type === 'mat' ? 'btn-warning' : 'btn-disabled'}`}
                             title={
                                 selectedIdInput?.type === 'mat'
                                     ? 'Seleccionar codificación existente para el campo ID seleccionado'
@@ -1006,7 +1008,7 @@ export default function ApuForm() {
                             Usar codificación
                         </button>
                     </div>
-                    <div className="grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
+                    <div className="hidden lg:grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
                         <div>ID</div><div>Descripción</div><div>Unidad</div><div>Precio</div><div>Cantidad</div><div></div>
                     </div>
                     {materials.map((mat, index) => {
@@ -1018,36 +1020,40 @@ export default function ApuForm() {
                             catMatch && !isItemCompatibleWithMotorType(catMatch.paraTipoM, processMotorType)
                         );
                         return (
-                            <div key={`mat-${index}`} className="mb-2">
-                                <div className={`grid grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-3 items-center p-1 rounded ${
+                            <div key={`mat-${index}`} className="mb-3 lg:mb-2">
+                                <div className={`grid grid-cols-2 sm:grid-cols-6 lg:grid-cols-[120px_minmax(150px,1fr)_80px_100px_100px_40px] gap-2.5 lg:gap-3 lg:items-center p-3 lg:p-1 rounded-lg lg:rounded ${
                                     isIncompatible
                                         ? 'bg-error/10 border border-error'
                                         : mat.isNew
                                             ? 'bg-warning/10 border border-warning/30'
-                                            : ''
+                                            : 'max-lg:bg-base-100 max-lg:border max-lg:border-base-300'
                                 }`}>
-                                    <input
-                                        id={`input-material-id-${index}`}
-                                        type="text"
-                                        className={`input input-sm input-bordered w-full ${
-                                            isIncompatible
-                                                ? incompatibleInputClass
-                                                : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalMaterials, index, 'materialId', mat.materialId)}`
-                                        }`}
-                                        value={mat.materialId}
-                                        onChange={(e) => updateMaterial(index, 'materialId', e.target.value)}
-                                        onFocus={() => setSelectedIdInput({ type: 'mat', index })}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleMaterialAutoFill(index, e.currentTarget.value); } }}
-                                        onBlur={(e) => {
-                                            const related = e.relatedTarget as HTMLElement | null;
-                                            if (related?.closest('[data-codif-picker-btn="true"]')) return;
-                                            setSelectedIdInput((prev) => (prev && prev.type === 'mat' && prev.index === index ? null : prev));
-                                            if (activeModalRef.current) return;
-                                            handleMaterialAutoFill(index, e.target.value);
-                                        }}
-                                        placeholder="ID"
-                                    />
-                                    <div className="relative">
+                                    <div className="col-span-2 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">ID</span>
+                                        <input
+                                            id={`input-material-id-${index}`}
+                                            type="text"
+                                            className={`input input-sm input-bordered w-full ${
+                                                isIncompatible
+                                                    ? incompatibleInputClass
+                                                    : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalMaterials, index, 'materialId', mat.materialId)}`
+                                            }`}
+                                            value={mat.materialId}
+                                            onChange={(e) => updateMaterial(index, 'materialId', e.target.value)}
+                                            onFocus={() => setSelectedIdInput({ type: 'mat', index })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleMaterialAutoFill(index, e.currentTarget.value); } }}
+                                            onBlur={(e) => {
+                                                const related = e.relatedTarget as HTMLElement | null;
+                                                if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                                setSelectedIdInput((prev) => (prev && prev.type === 'mat' && prev.index === index ? null : prev));
+                                                if (activeModalRef.current) return;
+                                                handleMaterialAutoFill(index, e.target.value);
+                                            }}
+                                            placeholder="ID"
+                                        />
+                                    </div>
+                                    <div className="relative col-span-2 sm:col-span-4 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Descripción</span>
                                         <input
                                             id={`input-material-desc-${index}`}
                                             type="text"
@@ -1099,10 +1105,24 @@ export default function ApuForm() {
                                             </ul>
                                         )}
                                     </div>
-                                    <input id={`input-material-unit-${index}`} type="text" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!mat.isNew ? 'bg-base-200' : '')}`} value={mat.unit} onChange={(e) => updateMaterial(index, 'unit', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-price-${index}`)} />
-                                    <input id={`input-material-price-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!mat.isNew ? 'bg-base-200' : '')}`} value={mat.price} onChange={(e) => updateMaterial(index, 'price', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-qty-${index}`)} />
-                                    <input id={`input-material-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalMaterials, index, 'quantity', mat.quantity)}`} value={mat.quantity} onChange={(e) => updateMaterial(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < materials.length ? `input-material-id-${index + 1}` : 'btn-add-material')} />
-                                    <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeMaterial(index)}>-</button>
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Unidad</span>
+                                        <input id={`input-material-unit-${index}`} type="text" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!mat.isNew ? 'bg-base-200' : '')}`} value={mat.unit} onChange={(e) => updateMaterial(index, 'unit', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-price-${index}`)} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Precio</span>
+                                        <input id={`input-material-price-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!mat.isNew ? 'bg-base-200' : '')}`} value={mat.price} onChange={(e) => updateMaterial(index, 'price', e.target.value)} disabled={!mat.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-material-qty-${index}`)} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-1 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Cantidad</span>
+                                        <input id={`input-material-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalMaterials, index, 'quantity', mat.quantity)}`} value={mat.quantity} onChange={(e) => updateMaterial(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < materials.length ? `input-material-id-${index + 1}` : 'btn-add-material')} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-1 lg:col-span-1 self-end lg:self-auto">
+                                        <button type="button" className="btn btn-sm btn-outline btn-error w-full lg:btn-square" onClick={() => removeMaterial(index)} aria-label="Quitar material">
+                                            <span className="lg:hidden text-xs">Quitar</span>
+                                            <span className="hidden lg:inline text-lg leading-none">-</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 {isIncompatible && (
                                     <p className="text-xs text-error font-medium mt-1 px-1">
@@ -1116,8 +1136,8 @@ export default function ApuForm() {
                 </div>
 
                 {/* EQUIPOS */}
-                <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
-                    <div className="flex justify-between items-center gap-3 mb-4">
+                <div className="bg-base-200/50 border border-base-300 p-3.5 sm:p-6 rounded-xl">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2 mb-4">
                         <h3 className="text-lg text-base-content font-medium flex items-center gap-2"><span>⚙️</span> Equipos</h3>
                         <button
                             type="button"
@@ -1125,7 +1145,7 @@ export default function ApuForm() {
                             disabled={selectedIdInput?.type !== 'equ'}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => openCodificationPicker('equ')}
-                            className={`btn btn-sm ${selectedIdInput?.type === 'equ' ? 'btn-warning' : 'btn-disabled'}`}
+                            className={`btn btn-sm whitespace-nowrap w-48 ${selectedIdInput?.type === 'equ' ? 'btn-warning' : 'btn-disabled'}`}
                             title={
                                 selectedIdInput?.type === 'equ'
                                     ? 'Seleccionar codificación existente para el campo ID seleccionado'
@@ -1135,7 +1155,7 @@ export default function ApuForm() {
                             Usar codificación
                         </button>
                     </div>
-                    <div className="grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
+                    <div className="hidden lg:grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
                         <div>ID</div><div>Descripción</div><div>Precio Inicial</div><div>Factor Deprec.</div><div>Cantidad</div><div></div>
                     </div>
                     {equipments.map((eq, index) => {
@@ -1147,36 +1167,40 @@ export default function ApuForm() {
                             catMatch && !isItemCompatibleWithMotorType(catMatch.paraTipoM, processMotorType)
                         );
                         return (
-                            <div key={`eq-${index}`} className="mb-2">
-                                <div className={`grid grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-3 items-center p-1 rounded ${
+                            <div key={`eq-${index}`} className="mb-3 lg:mb-2">
+                                <div className={`grid grid-cols-2 sm:grid-cols-6 lg:grid-cols-[120px_minmax(150px,1fr)_100px_120px_100px_40px] gap-2.5 lg:gap-3 lg:items-center p-3 lg:p-1 rounded-lg lg:rounded ${
                                     isIncompatible
                                         ? 'bg-error/10 border border-error'
                                         : eq.isNew
                                             ? 'bg-warning/10 border border-warning/30'
-                                            : ''
+                                            : 'max-lg:bg-base-100 max-lg:border max-lg:border-base-300'
                                 }`}>
-                                    <input
-                                        id={`input-equipment-id-${index}`}
-                                        type="text"
-                                        className={`input input-sm input-bordered w-full ${
-                                            isIncompatible
-                                                ? incompatibleInputClass
-                                                : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalEquipments, index, 'equipmentId', eq.equipmentId)}`
-                                        }`}
-                                        value={eq.equipmentId}
-                                        onChange={(e) => updateEquipment(index, 'equipmentId', e.target.value)}
-                                        onFocus={() => setSelectedIdInput({ type: 'equ', index })}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleEquipmentAutoFill(index, e.currentTarget.value); } }}
-                                        onBlur={(e) => {
-                                            const related = e.relatedTarget as HTMLElement | null;
-                                            if (related?.closest('[data-codif-picker-btn="true"]')) return;
-                                            setSelectedIdInput((prev) => (prev && prev.type === 'equ' && prev.index === index ? null : prev));
-                                            if (activeModalRef.current) return;
-                                            handleEquipmentAutoFill(index, e.target.value);
-                                        }}
-                                        placeholder="ID"
-                                    />
-                                    <div className="relative">
+                                    <div className="col-span-2 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">ID</span>
+                                        <input
+                                            id={`input-equipment-id-${index}`}
+                                            type="text"
+                                            className={`input input-sm input-bordered w-full ${
+                                                isIncompatible
+                                                    ? incompatibleInputClass
+                                                    : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalEquipments, index, 'equipmentId', eq.equipmentId)}`
+                                            }`}
+                                            value={eq.equipmentId}
+                                            onChange={(e) => updateEquipment(index, 'equipmentId', e.target.value)}
+                                            onFocus={() => setSelectedIdInput({ type: 'equ', index })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleEquipmentAutoFill(index, e.currentTarget.value); } }}
+                                            onBlur={(e) => {
+                                                const related = e.relatedTarget as HTMLElement | null;
+                                                if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                                setSelectedIdInput((prev) => (prev && prev.type === 'equ' && prev.index === index ? null : prev));
+                                                if (activeModalRef.current) return;
+                                                handleEquipmentAutoFill(index, e.target.value);
+                                            }}
+                                            placeholder="ID"
+                                        />
+                                    </div>
+                                    <div className="relative col-span-2 sm:col-span-4 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Descripción</span>
                                         <input
                                             id={`input-equipment-desc-${index}`}
                                             type="text"
@@ -1228,10 +1252,24 @@ export default function ApuForm() {
                                             </ul>
                                         )}
                                     </div>
-                                    <input id={`input-equipment-price-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!eq.isNew ? 'bg-base-200' : '')}`} value={eq.baseValue} onChange={(e) => updateEquipment(index, 'baseValue', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-deprec-${index}`)} />
-                                    <input id={`input-equipment-deprec-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!eq.isNew ? 'bg-base-200' : '')}`} value={eq.depreciation} onChange={(e) => updateEquipment(index, 'depreciation', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-qty-${index}`)} />
-                                    <input id={`input-equipment-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalEquipments, index, 'quantity', eq.quantity)}`} value={eq.quantity} onChange={(e) => updateEquipment(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < equipments.length ? `input-equipment-id-${index + 1}` : 'btn-add-equipment')} />
-                                    <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeEquipment(index)}>-</button>
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Precio Inicial</span>
+                                        <input id={`input-equipment-price-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!eq.isNew ? 'bg-base-200' : '')}`} value={eq.baseValue} onChange={(e) => updateEquipment(index, 'baseValue', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-deprec-${index}`)} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Factor Deprec.</span>
+                                        <input id={`input-equipment-deprec-${index}`} type="number" step="any" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!eq.isNew ? 'bg-base-200' : '')}`} value={eq.depreciation} onChange={(e) => updateEquipment(index, 'depreciation', e.target.value)} disabled={!eq.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-equipment-qty-${index}`)} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-1 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Cantidad</span>
+                                        <input id={`input-equipment-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalEquipments, index, 'quantity', eq.quantity)}`} value={eq.quantity} onChange={(e) => updateEquipment(index, 'quantity', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < equipments.length ? `input-equipment-id-${index + 1}` : 'btn-add-equipment')} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-1 lg:col-span-1 self-end lg:self-auto">
+                                        <button type="button" className="btn btn-sm btn-outline btn-error w-full lg:btn-square" onClick={() => removeEquipment(index)} aria-label="Quitar equipo">
+                                            <span className="lg:hidden text-xs">Quitar</span>
+                                            <span className="hidden lg:inline text-lg leading-none">-</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 {isIncompatible && (
                                     <p className="text-xs text-error font-medium mt-1 px-1">
@@ -1245,8 +1283,8 @@ export default function ApuForm() {
                 </div>
 
                 {/* MANO DE OBRA */}
-                <div className="bg-base-200/50 border border-base-300 p-6 rounded-xl min-w-[700px]">
-                    <div className="flex justify-between items-center gap-3 mb-4">
+                <div className="bg-base-200/50 border border-base-300 p-3.5 sm:p-6 rounded-xl">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2 mb-4">
                         <h3 className="text-lg text-base-content font-medium flex items-center gap-2"><span>👷</span> Mano de Obra</h3>
                         <button
                             type="button"
@@ -1254,7 +1292,7 @@ export default function ApuForm() {
                             disabled={selectedIdInput?.type !== 'mdo'}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => openCodificationPicker('mdo')}
-                            className={`btn btn-sm ${selectedIdInput?.type === 'mdo' ? 'btn-warning' : 'btn-disabled'}`}
+                            className={`btn btn-sm whitespace-nowrap w-48 ${selectedIdInput?.type === 'mdo' ? 'btn-warning' : 'btn-disabled'}`}
                             title={
                                 selectedIdInput?.type === 'mdo'
                                     ? 'Seleccionar codificación existente para el campo ID seleccionado'
@@ -1264,7 +1302,7 @@ export default function ApuForm() {
                             Usar codificación
                         </button>
                     </div>
-                    <div className="grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
+                    <div className="hidden lg:grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 px-1 mb-2 text-sm font-semibold text-base-content/70">
                         <div>ID</div><div>Descripción</div><div>Salario diario</div><div>Dotación</div><div></div>
                     </div>
                     {labors.map((lab, index) => {
@@ -1276,36 +1314,40 @@ export default function ApuForm() {
                             catMatch && !isItemCompatibleWithMotorType(catMatch.paraTipoM, processMotorType)
                         );
                         return (
-                            <div key={`lab-${index}`} className="mb-2">
-                                <div className={`grid grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-3 items-center p-1 rounded ${
+                            <div key={`lab-${index}`} className="mb-3 lg:mb-2">
+                                <div className={`grid grid-cols-2 sm:grid-cols-6 lg:grid-cols-[120px_minmax(150px,1fr)_120px_120px_40px] gap-2.5 lg:gap-3 lg:items-center p-3 lg:p-1 rounded-lg lg:rounded ${
                                     isIncompatible
                                         ? 'bg-error/10 border border-error'
                                         : lab.isNew
                                             ? 'bg-warning/10 border border-warning/30'
-                                            : ''
+                                            : 'max-lg:bg-base-100 max-lg:border max-lg:border-base-300'
                                 }`}>
-                                    <input
-                                        id={`input-labor-id-${index}`}
-                                        type="text"
-                                        className={`input input-sm input-bordered w-full ${
-                                            isIncompatible
-                                                ? incompatibleInputClass
-                                                : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalLabors, index, 'laborId', lab.laborId)}`
-                                        }`}
-                                        value={lab.laborId}
-                                        onChange={(e) => updateLabor(index, 'laborId', e.target.value)}
-                                        onFocus={() => setSelectedIdInput({ type: 'mdo', index })}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLaborAutoFill(index, e.currentTarget.value); } }}
-                                        onBlur={(e) => {
-                                            const related = e.relatedTarget as HTMLElement | null;
-                                            if (related?.closest('[data-codif-picker-btn="true"]')) return;
-                                            setSelectedIdInput((prev) => (prev && prev.type === 'mdo' && prev.index === index ? null : prev));
-                                            if (activeModalRef.current) return;
-                                            handleLaborAutoFill(index, e.target.value);
-                                        }}
-                                        placeholder="ID"
-                                    />
-                                    <div className="relative">
+                                    <div className="col-span-2 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">ID</span>
+                                        <input
+                                            id={`input-labor-id-${index}`}
+                                            type="text"
+                                            className={`input input-sm input-bordered w-full ${
+                                                isIncompatible
+                                                    ? incompatibleInputClass
+                                                    : `${isIdSelected ? 'border-warning ring-1 ring-warning' : ''} ${getListHighlight(originalLabors, index, 'laborId', lab.laborId)}`
+                                            }`}
+                                            value={lab.laborId}
+                                            onChange={(e) => updateLabor(index, 'laborId', e.target.value)}
+                                            onFocus={() => setSelectedIdInput({ type: 'mdo', index })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLaborAutoFill(index, e.currentTarget.value); } }}
+                                            onBlur={(e) => {
+                                                const related = e.relatedTarget as HTMLElement | null;
+                                                if (related?.closest('[data-codif-picker-btn="true"]')) return;
+                                                setSelectedIdInput((prev) => (prev && prev.type === 'mdo' && prev.index === index ? null : prev));
+                                                if (activeModalRef.current) return;
+                                                handleLaborAutoFill(index, e.target.value);
+                                            }}
+                                            placeholder="ID"
+                                        />
+                                    </div>
+                                    <div className="relative col-span-2 sm:col-span-4 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Descripción</span>
                                         <input
                                             id={`input-labor-desc-${index}`}
                                             type="text"
@@ -1357,9 +1399,20 @@ export default function ApuForm() {
                                             </ul>
                                         )}
                                     </div>
-                                    <input id={`input-labor-wage-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!lab.isNew ? 'bg-base-200' : '')}`} value={lab.dailyWage} onChange={(e) => updateLabor(index, 'dailyWage', e.target.value)} disabled={!lab.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-labor-qty-${index}`)} />
-                                    <input id={`input-labor-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalLabors, index, 'dotation', lab.dotation)}`} value={lab.dotation} onChange={(e) => updateLabor(index, 'dotation', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < labors.length ? `input-labor-id-${index + 1}` : 'btn-add-labor')} />
-                                    <button type="button" className="btn btn-sm btn-square btn-outline btn-error text-lg" onClick={() => removeLabor(index)}>-</button>
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Salario diario</span>
+                                        <input id={`input-labor-wage-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : (!lab.isNew ? 'bg-base-200' : '')}`} value={lab.dailyWage} onChange={(e) => updateLabor(index, 'dailyWage', e.target.value)} disabled={!lab.isNew} onKeyDown={(e) => handleEnterFocus(e, `input-labor-qty-${index}`)} />
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                                        <span className="lg:hidden text-[11px] font-semibold text-base-content/70 mb-1 block">Dotación</span>
+                                        <input id={`input-labor-qty-${index}`} type="number" className={`input input-sm input-bordered w-full ${isIncompatible ? incompatibleInputClass : getListHighlight(originalLabors, index, 'dotation', lab.dotation)}`} value={lab.dotation} onChange={(e) => updateLabor(index, 'dotation', e.target.value)} onKeyDown={(e) => handleEnterFocus(e, index + 1 < labors.length ? `input-labor-id-${index + 1}` : 'btn-add-labor')} />
+                                    </div>
+                                    <div className="col-span-2 sm:col-span-2 lg:col-span-1 self-end lg:self-auto">
+                                        <button type="button" className="btn btn-sm btn-outline btn-error w-full lg:btn-square" onClick={() => removeLabor(index)} aria-label="Quitar mano de obra">
+                                            <span className="lg:hidden text-xs">Quitar</span>
+                                            <span className="hidden lg:inline text-lg leading-none">-</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 {isIncompatible && (
                                     <p className="text-xs text-error font-medium mt-1 px-1">
@@ -1373,9 +1426,9 @@ export default function ApuForm() {
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8 border-t pt-6">
-                <button type="button" onClick={goBack} className="btn btn-ghost" disabled={isSaving}>Cancelar</button>
-                <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSaving}>
+            <div className="flex flex-col-reverse sm:flex-row justify-center lg:justify-end items-center gap-3 mt-8 border-t border-base-300 pt-6">
+                <button type="button" onClick={goBack} className="btn btn-ghost w-48" disabled={isSaving}>Cancelar</button>
+                <button type="button" className="btn btn-primary w-48" onClick={handleSubmit} disabled={isSaving}>
                     {isSaving ? <span className="loading loading-spinner"></span> : (isEditing ? 'Guardar Cambios' : 'Generar Servicio')}
                 </button>
             </div>

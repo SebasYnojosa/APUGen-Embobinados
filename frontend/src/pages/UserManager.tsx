@@ -220,15 +220,15 @@ export default function UserManager() {
     };
 
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Gestión de Usuarios</h1>
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-7xl mx-auto border border-base-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold">Gestión de Usuarios</h1>
                     <p className="text-sm text-base-content/70">
                         Administra las cuentas con acceso al sistema APU Gen.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={openCreateModal}>
+                <button className="btn btn-primary btn-sm self-center sm:self-auto whitespace-nowrap w-48" onClick={openCreateModal}>
                     + Nuevo Usuario
                 </button>
             </div>
@@ -244,8 +244,102 @@ export default function UserManager() {
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+            {/* VISTA EN TARJETAS (< lg) */}
+            <div className="lg:hidden space-y-3">
+                {loading ? (
+                    <div className="text-center py-8 text-base-content/70">Cargando usuarios...</div>
+                ) : users.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/70">No hay usuarios registrados.</div>
+                ) : (
+                    users.map((u) => {
+                        const isSelf = currentUser?.id === u.id;
+                        return (
+                            <article
+                                key={u.id}
+                                className="p-4 rounded-box bg-base-200/40 border border-base-300 space-y-2.5"
+                            >
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                        <span className="font-bold text-base break-all">{u.username}</span>
+                                        {isSelf && (
+                                            <span className="badge badge-xs badge-info badge-outline">
+                                                Tú
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span
+                                        className={`badge badge-sm shrink-0 ${
+                                            u.role === 'ADMIN' ? 'badge-primary' : 'badge-ghost'
+                                        }`}
+                                    >
+                                        {u.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
+                                    </span>
+                                </div>
+
+                                <p className="text-sm font-medium break-words">{u.fullName}</p>
+
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <span
+                                        className={`badge badge-sm ${
+                                            u.active
+                                                ? 'badge-success badge-outline'
+                                                : 'badge-error badge-outline'
+                                        }`}
+                                    >
+                                        {u.active ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                    {u.mustChangePassword && (
+                                        <span className="badge badge-sm badge-warning badge-outline">
+                                            Cambio pendiente
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="pt-2 border-t border-base-300/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <span className="text-xs text-base-content/70 tabular-nums">
+                                        <span className="font-semibold">Creado:</span> {formatCreatedAt(u.createdAt)}
+                                    </span>
+                                    <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                                        <button
+                                            type="button"
+                                            className="btn btn-xs btn-outline btn-info whitespace-nowrap w-28"
+                                            onClick={() => openEditModal(u)}
+                                        >
+                                            Editar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-xs btn-outline btn-warning whitespace-nowrap w-28"
+                                            onClick={() => openResetModal(u)}
+                                        >
+                                            Resetear clave
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`btn btn-xs btn-outline whitespace-nowrap w-28 ${
+                                                u.active ? 'btn-error' : 'btn-success'
+                                            }`}
+                                            disabled={isSelf}
+                                            title={
+                                                isSelf
+                                                    ? 'No puedes desactivar tu propia cuenta'
+                                                    : undefined
+                                            }
+                                            onClick={() => handleToggleStatus(u)}
+                                        >
+                                            {u.active ? 'Desactivar' : 'Activar'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* VISTA EN TABLA (lg+) */}
+            <div className="hidden lg:block overflow-x-auto">
+                <table className="table table-zebra table-sm w-full [&_th]:px-2.5 [&_td]:px-2.5">
                     <thead>
                         <tr>
                             <th>Usuario</th>
@@ -284,7 +378,7 @@ export default function UserManager() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td>{u.fullName}</td>
+                                        <td className="break-words">{u.fullName}</td>
                                         <td>
                                             <span
                                                 className={`badge badge-sm ${
@@ -314,25 +408,28 @@ export default function UserManager() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="text-sm text-base-content/70 whitespace-nowrap tabular-nums">
+                                        <td className="text-xs text-base-content/70 whitespace-nowrap tabular-nums">
                                             {formatCreatedAt(u.createdAt)}
                                         </td>
                                         <td className="whitespace-nowrap">
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button
-                                                    className="btn btn-xs btn-outline btn-info whitespace-nowrap"
+                                                    type="button"
+                                                    className="btn btn-xs btn-outline btn-info whitespace-nowrap w-28"
                                                     onClick={() => openEditModal(u)}
                                                 >
                                                     Editar
                                                 </button>
                                                 <button
-                                                    className="btn btn-xs btn-outline btn-warning whitespace-nowrap"
+                                                    type="button"
+                                                    className="btn btn-xs btn-outline btn-warning whitespace-nowrap w-28"
                                                     onClick={() => openResetModal(u)}
                                                 >
                                                     Resetear clave
                                                 </button>
                                                 <button
-                                                    className={`btn btn-xs btn-outline whitespace-nowrap ${
+                                                    type="button"
+                                                    className={`btn btn-xs btn-outline whitespace-nowrap w-28 ${
                                                         u.active ? 'btn-error' : 'btn-success'
                                                     }`}
                                                     disabled={isSelf}
@@ -358,7 +455,7 @@ export default function UserManager() {
             {/* MODAL CREAR / EDITAR USUARIO */}
             {isUserModalOpen && (
                 <div className="modal modal-open" role="dialog" aria-modal="true">
-                    <div className="modal-box max-w-md">
+                    <div className="modal-box w-11/12 max-w-md max-h-[90vh] overflow-y-auto">
                         <h3 className="font-bold text-lg mb-4">
                             {isEditing ? 'Editar Usuario' : 'Registrar Nuevo Usuario'}
                         </h3>
@@ -461,10 +558,10 @@ export default function UserManager() {
                                         />
                                     </div>
 
-                                    <label className="label cursor-pointer justify-start gap-3">
+                                    <label className="label cursor-pointer justify-start gap-3 whitespace-normal">
                                         <input
                                             type="checkbox"
-                                            className="checkbox checkbox-primary checkbox-sm"
+                                            className="checkbox checkbox-primary checkbox-sm shrink-0"
                                             checked={formState.mustChangePassword}
                                             onChange={(e) =>
                                                 setFormState((prev) => ({
@@ -481,10 +578,10 @@ export default function UserManager() {
                                 </>
                             )}
 
-                            <div className="modal-action mt-2">
+                            <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
                                 <button
                                     type="button"
-                                    className="btn"
+                                    className="btn w-36"
                                     onClick={closeUserModal}
                                     disabled={submittingUser}
                                 >
@@ -492,7 +589,7 @@ export default function UserManager() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="btn btn-primary"
+                                    className="btn btn-primary w-36"
                                     disabled={submittingUser}
                                 >
                                     {submittingUser ? (
@@ -516,9 +613,9 @@ export default function UserManager() {
             {/* MODAL RESETEAR CONTRASEÑA */}
             {resetTarget && (
                 <div className="modal modal-open" role="dialog" aria-modal="true">
-                    <div className="modal-box max-w-md">
+                    <div className="modal-box w-11/12 max-w-md max-h-[90vh] overflow-y-auto">
                         <h3 className="font-bold text-lg mb-1">Resetear contraseña</h3>
-                        <p className="text-sm text-base-content/70 mb-4">
+                        <p className="text-sm text-base-content/70 mb-4 break-words">
                             Establece una nueva contraseña para{' '}
                             <span className="font-semibold">{resetTarget.fullName}</span> (
                             <code>{resetTarget.username}</code>).
@@ -554,10 +651,10 @@ export default function UserManager() {
                                 />
                             </div>
 
-                            <label className="label cursor-pointer justify-start gap-3">
+                            <label className="label cursor-pointer justify-start gap-3 whitespace-normal">
                                 <input
                                     type="checkbox"
-                                    className="checkbox checkbox-primary checkbox-sm"
+                                    className="checkbox checkbox-primary checkbox-sm shrink-0"
                                     checked={resetMustChange}
                                     onChange={(e) => setResetMustChange(e.target.checked)}
                                     disabled={submittingReset}
@@ -567,10 +664,10 @@ export default function UserManager() {
                                 </span>
                             </label>
 
-                            <div className="modal-action mt-2">
+                            <div className="modal-action flex-wrap justify-center sm:justify-end gap-2 mt-2">
                                 <button
                                     type="button"
-                                    className="btn"
+                                    className="btn w-44"
                                     onClick={closeResetModal}
                                     disabled={submittingReset}
                                 >
@@ -578,7 +675,7 @@ export default function UserManager() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="btn btn-warning"
+                                    className="btn btn-warning w-44"
                                     disabled={submittingReset}
                                 >
                                     {submittingReset ? (

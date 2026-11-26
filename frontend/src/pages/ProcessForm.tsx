@@ -439,11 +439,21 @@ export default function ProcessForm() {
         }
     };
 
+    const handleGoBack = () => {
+        if (window.history.state?.idx > 0) {
+            navigate(-1);
+        } else if (isEditing && editServiceRequest) {
+            navigate(`/apus/detalle?serviceRequest=${encodeURIComponent(editServiceRequest)}`);
+        } else {
+            navigate('/apus');
+        }
+    };
+
     return (
-        <div className="p-6 bg-base-100 rounded-box shadow max-w-4xl mx-auto border border-base-200">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold mb-1">
+        <div className="p-4 sm:p-6 bg-base-100 rounded-box shadow max-w-4xl mx-auto border border-base-200">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-3 lg:mb-6">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold mb-1">
                         {isEditing ? 'Editar Proceso (Obra)' : 'Crear Nuevo Proceso (Obra)'}
                     </h1>
                     <p className="text-sm text-base-content/70">
@@ -451,9 +461,17 @@ export default function ProcessForm() {
                     </p>
                 </div>
 
-                {/* BOTONES ESQUINA: CREACIÓN RÁPIDA DE POTENCIA Y MARCA */}
-                <div className="flex flex-wrap items-start justify-start sm:justify-end gap-2 shrink-0">
+                {/* BOTONES ESQUINA: VOLVER Y CREACIÓN RÁPIDA DE POTENCIA Y MARCA */}
+                <div className="flex flex-wrap justify-center items-start gap-3 sm:gap-4 lg:flex-col lg:items-end lg:justify-start lg:gap-2 w-full lg:w-auto">
+                    <button
+                        type="button"
+                        onClick={handleGoBack}
+                        className="btn btn-outline btn-sm whitespace-nowrap w-48"
+                    >
+                        Volver
+                    </button>
                     <QuickPowerButton
+                        buttonClassName="w-48"
                         existingPowers={catalogPowers}
                         onPowerCreated={handlePowerCreated}
                         isOpen={activeQuickCreate === 'power'}
@@ -464,6 +482,7 @@ export default function ProcessForm() {
                         }
                     />
                     <QuickBrandButton
+                        buttonClassName="w-48"
                         existingBrands={catalogBrands}
                         onBrandCreated={handleBrandCreated}
                         isOpen={activeQuickCreate === 'brand'}
@@ -478,8 +497,8 @@ export default function ProcessForm() {
 
             <form onSubmit={handleSubmit}>
                 {/* CABECERA */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 border-b pb-6">
-                    <div className="form-control md:col-span-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6 border-b border-base-300 pb-6">
+                    <div className="form-control sm:col-span-1">
                         <label className="label"><span className="label-text font-bold">Solicitud (ID)*</span></label>
                         <input
                             id="input-serviceRequest"
@@ -495,7 +514,7 @@ export default function ProcessForm() {
                             disabled={isEditing}
                         />
                     </div>
-                    <div className="form-control md:col-span-3">
+                    <div className="form-control sm:col-span-2 lg:col-span-3">
                         <label className="label"><span className="label-text font-bold">Proceso Principal*</span></label>
                         <input
                             id="input-mainProcess"
@@ -510,7 +529,7 @@ export default function ProcessForm() {
                         />
                     </div>
 
-                    <div className="form-control md:col-span-1">
+                    <div className="form-control sm:col-span-1">
                         <label className="label"><span className="label-text font-bold">Empresa (ID)*</span></label>
                         <input
                             id="input-companyId"
@@ -530,7 +549,7 @@ export default function ProcessForm() {
                             required
                         />
                     </div>
-                    <div className="form-control md:col-span-3 relative" ref={companyDropdownRef}>
+                    <div className="form-control sm:col-span-2 lg:col-span-3 relative" ref={companyDropdownRef}>
                         <label className="label">
                             <span className="label-text font-bold">
                                 Nombre de la Empresa {header.isNewCompany && <span className="text-error ml-2">(Creando Nueva)</span>}
@@ -565,12 +584,12 @@ export default function ProcessForm() {
                                                     e.preventDefault();
                                                     selectCompany(comp);
                                                 }}
-                                                className={`flex justify-between items-center text-left w-full ${
+                                                className={`flex justify-between items-center gap-2 text-left w-full ${
                                                     idx === highlightedIndex ? 'active' : ''
                                                 }`}
                                             >
-                                                <span className="font-medium">{comp.name}</span>
-                                                <span className="badge badge-ghost badge-sm font-mono">{comp.id}</span>
+                                                <span className="font-medium truncate">{comp.name}</span>
+                                                <span className="badge badge-ghost badge-sm font-mono shrink-0">{comp.id}</span>
                                             </button>
                                         </li>
                                     ))
@@ -589,7 +608,7 @@ export default function ProcessForm() {
 
                 {/* ESPECIFICACIONES DEL EQUIPO */}
                 <h2 className="text-lg font-semibold mb-3">Especificaciones del Equipo</h2>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                     <div className="form-control relative" ref={powerDropdownRef}>
                         <label className="label">
                             <span className="label-text">
@@ -738,10 +757,10 @@ export default function ProcessForm() {
                             value={header.serial}
                             onChange={handleInputChange}
                             onKeyDown={(e) => handleEnterFocus(e, 'input-location')}
-                            className={`input input-bordered input-sm ${getHeaderHighlight('serial')}`}
+                            className={`input input-bordered input-sm w-full ${getHeaderHighlight('serial')}`}
                         />
                     </div>
-                    <div className="form-control">
+                    <div className="form-control sm:col-span-2 lg:col-span-1">
                         <label className="label"><span className="label-text">Ubicación</span></label>
                         <input
                             id="input-location"
@@ -749,25 +768,21 @@ export default function ProcessForm() {
                             name="location"
                             value={header.location}
                             onChange={handleInputChange}
-                            className={`input input-bordered input-sm ${getHeaderHighlight('location')}`}
+                            className={`input input-bordered input-sm w-full ${getHeaderHighlight('location')}`}
                         />
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 border-t pt-6">
+                <div className="flex flex-col-reverse sm:flex-row justify-center lg:justify-end items-center gap-3 border-t border-base-300 pt-6">
                     <button
                         type="button"
-                        onClick={() =>
-                            isEditing && editServiceRequest
-                                ? navigate(`/apus/detalle?serviceRequest=${encodeURIComponent(editServiceRequest)}`)
-                                : navigate('/apus')
-                        }
-                        className="btn btn-ghost"
+                        onClick={handleGoBack}
+                        className="btn btn-ghost w-48"
                         disabled={isSaving}
                     >
                         Cancelar
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={isSaving}>
+                    <button type="submit" className="btn btn-primary w-48" disabled={isSaving}>
                         {isSaving ? <span className="loading loading-spinner"></span> : (isEditing ? 'Guardar Cambios' : 'Crear Proceso')}
                     </button>
                 </div>
